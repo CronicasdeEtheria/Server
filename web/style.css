@@ -1,0 +1,84 @@
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Tipografía y fondo */
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #fafafa;
+    color: #222;
+    line-height: 1.4;
+    padding: 1rem;
+  }
+  
+  /* Cabecera */
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  header h1 {
+    font-size: 1.75rem;
+  }
+  header small {
+    color: #666;
+  }
+  
+  /* Estadísticas rápidas */
+  .stats-cards {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+  .card {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    flex: 1;
+    max-width: 200px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  .card h2 {
+    font-size: 1rem;
+    color: #555;
+  }
+  .card p {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-top: 0.5rem;
+  }
+  
+  /* Gráfico */
+  .chart-container {
+    max-width: 400px;
+    margin: 0 auto 2rem;
+  }
+  
+  /* Tabla de usuarios */
+  .table-container {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  th {
+    background: #f0f0f0;
+    font-weight: normal;
+    color: #555;
+  }
+  tr:hover {
+    background: #fafafa;
+  }
+  

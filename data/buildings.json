@@ -1,0 +1,87 @@
+[
+    {
+      "id": "townhall",
+      "name": "Ayuntamiento",
+      "baseCost": 200,
+      "baseTime": 120,
+      "cost": { "wood": 120, "stone": 120, "food": 120 },
+      "prodPerHour": 0,
+      "maxLevel": 10,
+      "costMultiplier": 1.20,
+      "timeMultiplier": 1.15,
+      "storagePerLevel": 0
+    },
+    {
+      "id": "warehouse",
+      "name": "Almacenamiento",
+      "baseCost": 200,
+      "baseTime": 120,
+      "cost": { "wood": 60, "stone": 30, "food": 20 },
+      "prodPerHour": 0,
+      "maxLevel": 10,
+      "costMultiplier": 1.15,
+      "timeMultiplier": 1.10,
+      "storagePerLevel": 1000
+    },
+    {
+      "id": "barracks",
+      "name": "Cuartel",
+      "baseCost": 200,
+      "baseTime": 120,
+      "cost": { "wood": 100, "stone": 50, "food": 75 },
+      "prodPerHour": 0,
+      "maxLevel": 10,
+      "costMultiplier": 1.20,
+      "timeMultiplier": 1.15,
+      "storagePerLevel": 0
+    },
+    {
+      "id": "lumbermill",
+      "name": "Aserradero",
+      "baseCost": 150,
+      "baseTime": 90,
+      "cost": { "wood": 80, "stone": 40, "food": 60 },
+      "prodPerHour": 30,
+      "maxLevel": 10,
+      "costMultiplier": 1.20,
+      "timeMultiplier": 1.15,
+      "storagePerLevel": 0
+    },
+    {
+      "id": "stonemine",
+      "name": "Mina de Piedra",
+      "baseCost": 150,
+      "baseTime": 90,
+      "cost": { "wood": 80, "stone": 40, "food": 60 },
+      "prodPerHour": 20,
+      "maxLevel": 10,
+      "costMultiplier": 1.20,
+      "timeMultiplier": 1.15,
+      "storagePerLevel": 0
+    },
+    {
+      "id": "farm",
+      "name": "Granja",
+      "baseCost": 100,
+      "baseTime": 60,
+      "cost": { "wood": 60, "stone": 30, "food": 50 },
+      "prodPerHour": 50,
+      "maxLevel": 10,
+      "costMultiplier": 1.20,
+      "timeMultiplier": 1.15,
+      "storagePerLevel": 0
+    },
+    {
+      "id": "coliseo",
+      "name": "Coliseo",
+      "baseCost": 100,
+      "baseTime": 60,
+      "cost": { "wood": 60, "stone": 30, "food": 50 },
+      "prodPerHour": 0,
+      "maxLevel": 10,
+      "costMultiplier": 1.25,
+      "timeMultiplier": 1.20,
+      "storagePerLevel": 0
+    }
+  ]
+  
