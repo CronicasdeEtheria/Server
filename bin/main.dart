@@ -33,7 +33,8 @@ import '../lib/handlers/auth_handler.dart';
 // ... imports idénticos ...
 
 Future<void> main() async {
-final env = DotEnv()..load();
+final env = DotEnv(includePlatformEnvironment: true)
+    ..load();
 final timezone = env['TZ'] ?? 'America/Argentina/Buenos_Aires';
 configureTimezone(timezone);
   await initDb(env);
