@@ -7,43 +7,50 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Dashboard del Servidor</h1>
-    <small id="server-time">Cargando hora...</small>
-  </header>
+  <div class="container">
+    <header>
+      <h1>Dashboard del Servidor</h1>
+      <small id="server-time">Cargando hora...</small>
+    </header>
 
-  <section class="stats-cards">
-    <div class="card">
-      <h2>Total Usuarios</h2>
-      <p id="total-users">0</p>
-    </div>
-    <div class="card">
-      <h2>Conectados</h2>
-      <p id="online-users">0</p>
-    </div>
-  </section>
+    <section class="stats-cards">
+      <div class="card">
+        <h2>Total Usuarios</h2>
+        <p id="total-users">0</p>
+      </div>
+      <div class="card">
+        <h2>Conectados</h2>
+        <p id="online-users">0</p>
+      </div>
+      <div class="card">
+        <h2>Raza más común</h2>
+        <p id="top-race">–</p>
+      </div>
+    </section>
 
-  <section class="chart-container">
-    <canvas id="raceChart"></canvas>
-  </section>
+    <section class="chart-container">
+      <canvas id="raceChart"></canvas>
+    </section>
 
-  <section class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>UID</th>
-          <th>Usuario</th>
-          <th>Email</th>
-          <th>Elo</th>
-          <th>Raza</th>
-          <th>Gremio</th>
-        </tr>
-      </thead>
-      <tbody id="user-table">
-        <!-- Filas vía JS -->
-      </tbody>
-    </table>
-  </section>
+    <section class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>UID</th>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Elo</th>
+            <th>Raza</th>
+            <th>Gremio</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="user-table">
+          <!-- Filas via JS -->
+        </tbody>
+      </table>
+    </section>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="dashboard.js"></script>
