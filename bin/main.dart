@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:crypto/crypto.dart';
+import 'package:guildserver/handlers/race_handler.dart';
+import 'package:guildserver/handlers/unit_handler.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_static/shelf_static.dart';
@@ -54,8 +56,9 @@ Future<void> main() async {
     ..get('/guild/image/<guildId>', getGuildImageHandler)
     ..get('/chat/global/history', chatGlobalHistoryHandler)
     ..get('/ranking', rankingHandler)
-    ..get('/online_users', onlineUsersHandler);
-
+    ..get('/online_users', onlineUsersHandler)
+  ..get ('/race/list',     raceListHandler)  // ← NUEVA
+..get('/unit/list', unitListHandler);
   // Rutas de administración (sin auth)
   final adminRoutes = Router()
     ..get('/admin/users', adminUsersHandler)
@@ -69,6 +72,8 @@ Future<void> main() async {
     ..post('/user/profile', getUserProfile)
     ..post('/user/collect', collectResourcesHandler)
     ..post('/build/cancel', cancelConstruction)
+    ..post('/build/start', startConstruction)
+    ..post('/build/status', checkConstructionStatus)
     ..post('/train/start', startTraining)
     ..post('/train/cancel', cancelTraining)
     ..post('/sync/queues', syncQueuesHandler)
@@ -108,8 +113,11 @@ Future<void> main() async {
       })
       .add(staticHandler)
       .add(adminRoutes)
+
+
+        .add(publicRoutes)
       .add(authMiddleware()(protectedRoutes))
-      .add(publicRoutes)
+
       .handler;
 
   // Pipeline con logging y CORS

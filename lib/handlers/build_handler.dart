@@ -15,168 +15,253 @@ Map<String, dynamic> calculateUpgradeCost(String buildingId, int currentLevel) {
     'food': (b.baseCostFood * factor).round(),
   };
 }
-
 Future<Response> startConstruction(Request request) async {
   try {
     final conn = await getConnection();
 
-    final data = jsonDecode(await request.readAsString());
-    final uid = data['uid'];
-    final buildingId = data['building_id'];
+    // ──────────────────── UID desde cabecera ────────────────────
+    final uid = request.headers['uid'];
+    if (uid == null || uid.isEmpty) {
+      return Response.forbidden('Token inválido.');
+    }
 
-    if (uid == null || buildingId == null) {
-      return Response(400, body: 'Faltan parámetros.');
+    // ──────────────────── Body JSON ─────────────────────────────
+    final data = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    final buildingId  = data['buildId']      as String?;   // ← nombre igual al cliente
+    final targetLevel = data['targetLevel']  as int?;      // opcional
+
+    if (buildingId == null) {
+      return Response(400, body: 'Falta buildId.');
     }
 
     final building = buildingCatalog[buildingId];
-    if (building == null) return Response(400, body: 'Edificio inválido.');
+    if (building == null) {
+      return Response(400, body: 'Edificio inválido.');
+    }
 
-    final levelsRes = await conn.execute('''
-      SELECT ${buildingId}_level, townhall_level FROM buildings WHERE user_id = :uid
+    // ─────── nivel actual y ayuntamiento ───────
+    final lvRes = await conn.execute('''
+      SELECT ${buildingId}_level AS lv, townhall_level
+      FROM buildings
+      WHERE user_id = :uid
     ''', {'uid': uid});
-    final row = levelsRes.rows.first;
-    final currentLevel = int.parse(row.colAt(0) ?? '0');
-    final townhallLevel = int.parse(row.colAt(1) ?? '0');
 
-    if (currentLevel >= building.maxLevel) {
-      return Response(400, body: 'Edificio ya está al nivel máximo.');
+    if (lvRes.rows.isEmpty) {
+      return Response(404, body: 'Usuario sin registro de edificios.');
     }
 
-    if (buildingId != 'townhall' && currentLevel >= townhallLevel) {
-      return Response(400, body: 'Debes subir el ayuntamiento primero.');
-    }
+    final row           = lvRes.rows.first.assoc();
+    final currentLevel  = int.parse(row['lv']!);
+    final townhallLevel = int.parse(row['townhall_level']!);
 
+    // nivel que se quiere alcanzar
+    final nextLevel = targetLevel ?? (currentLevel + 1);
+
+    if (nextLevel > building.maxLevel) {
+      return Response(400, body: 'Excede nivel máximo (${building.maxLevel}).');
+    }
+    // …después de calcular nextLevel y townhallLevel
+
+if (buildingId != 'townhall' && nextLevel > 3 && nextLevel > townhallLevel) {
+  return Response(
+    400,
+    body: 'Primero sube el ayuntamiento a Lv $nextLevel.',
+  );
+}
+
+
+    // ─────── calcular coste / duración ───────
     final cost = calculateUpgradeCost(buildingId, currentLevel);
 
+    // ─────── comprobar recursos ───────
     final res = await conn.execute(
       'SELECT food, wood, stone FROM resources WHERE user_id = :uid',
       {'uid': uid},
     );
-    final resRow = res.rows.first;
-
-    if (int.parse(resRow.colAt(0)!) < cost['food'] ||
-        int.parse(resRow.colAt(1)!) < cost['wood'] ||
-        int.parse(resRow.colAt(2)!) < cost['stone']) {
+    final r = res.rows.first.assoc();
+    if (int.parse(r['food']!)  < cost['food']  ||
+        int.parse(r['wood']!)  < cost['wood']  ||
+        int.parse(r['stone']!) < cost['stone']) {
       return Response(400, body: 'Recursos insuficientes.');
     }
 
+    // ─────── descontar recursos ───────
     await conn.execute('''
-      UPDATE resources SET 
-        food = food - :food, 
-        wood = wood - :wood, 
-        stone = stone - :stone 
+      UPDATE resources SET
+        food  = food  - :food,
+        wood  = wood  - :wood,
+        stone = stone - :stone
       WHERE user_id = :uid
     ''', {
-      'food': cost['food'].toString(),
-      'wood': cost['wood'].toString(),
-      'stone': cost['stone'].toString(),
-      'uid': uid,
+      'food' : cost['food'],
+      'wood' : cost['wood'],
+      'stone': cost['stone'],
+      'uid'  : uid,
     });
 
+    // ─────── encolar construcción ───────
     await conn.execute('''
-      INSERT INTO construction_queue (user_id, building_id, duration_seconds)
-      VALUES (:uid, :bid, :duration)
+      INSERT INTO construction_queue
+        (user_id, building_id, target_level, duration_seconds, started_at)
+      VALUES (:uid, :bid, :tLv, :dur, NOW())
     ''', {
       'uid': uid,
       'bid': buildingId,
-      'duration': cost['duration_seconds'].toString(),
+      'tLv': nextLevel,
+      'dur': cost['duration_seconds'],
     });
 
-    return Response.ok(jsonEncode({'status': 'queued', 'cost': cost}));
+    return Response.ok(
+      jsonEncode({
+        'ok': true,
+        'queued': {
+          'building': buildingId,
+          'targetLevel': nextLevel,
+          'cost': cost,
+        }
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
   } catch (e) {
-    return Response(500, body: 'Error al iniciar construcción: $e');
+    return Response.internalServerError(
+        body: 'Error al iniciar construcción: $e');
   }
 }
 
 Future<Response> cancelConstruction(Request request) async {
   try {
     final conn = await getConnection();
+    final uid = request.headers['uid'];
+    if (uid == null || uid.isEmpty) return Response.forbidden('Token inválido.');
 
-    final data = jsonDecode(await request.readAsString());
-    final uid = data['uid'];
-    if (uid == null) return Response(400, body: 'Falta el uid.');
-
+    // primera obra en cola (o puedes pedir building_id opcional en el body)
     final qRes = await conn.execute(
-      'SELECT id, building_id FROM construction_queue WHERE user_id = :uid LIMIT 1',
+      '''
+      SELECT id, building_id, target_level, food, wood, stone
+      FROM   construction_queue
+      WHERE  user_id = :uid
+      ORDER  BY started_at
+      LIMIT  1
+      ''',
       {'uid': uid},
     );
     if (qRes.rows.isEmpty) {
       return Response(400, body: 'No hay construcción en progreso.');
     }
 
-    final row = qRes.rows.first;
-    final refund = {'food': 50, 'wood': 50, 'stone': 50};
+    final q = qRes.rows.first.assoc();
 
-    await conn.execute('''
-      UPDATE resources SET 
-        food = food + :food, 
-        wood = wood + :wood, 
-        stone = stone + :stone
-      WHERE user_id = :uid
-    ''', {
-      'food': refund['food'].toString(),
-      'wood': refund['wood'].toString(),
-      'stone': refund['stone'].toString(),
-      'uid': uid,
-    });
-
+    // reembolso 50 %
+    int half(String k) => (int.parse(q[k]!) / 2).round();
     await conn.execute(
-      'DELETE FROM construction_queue WHERE id = :id',
-      {'id': row.colAt(0)},
-    );
+      '''
+      UPDATE resources SET
+        food  = food  + :f,
+        wood  = wood  + :w,
+        stone = stone + :s
+      WHERE user_id = :uid
+      ''',
+      {
+        'f': half('food'),
+        'w': half('wood'),
+        's': half('stone'),
+        'uid': uid,
+      });
 
-    return Response.ok(jsonEncode({'status': 'cancelled', 'refunded': refund}));
+    await conn.execute('DELETE FROM construction_queue WHERE id = :id',
+        {'id': q['id']});
+
+    return Response.ok(jsonEncode({
+      'ok': true,
+      'cancelled': q['building_id'],
+      'refunded': {
+        'food': half('food'),
+        'wood': half('wood'),
+        'stone': half('stone')
+      }
+    }));
   } catch (e) {
-    return Response(500, body: 'Error al cancelar construcción: $e');
+    return Response.internalServerError(body: 'Cancel error: $e');
   }
 }
-
 Future<Response> checkConstructionStatus(Request request) async {
   try {
     final conn = await getConnection();
+    final uid = request.headers['uid'];
+    if (uid == null || uid.isEmpty) return Response.forbidden('Token inválido.');
 
-    final data = jsonDecode(await request.readAsString());
-    final uid = data['uid'];
-    if (uid == null) return Response(400, body: 'Falta el uid.');
+    // ➊ Obtenemos la primera obra en cola
+    final qRes = await conn.execute('''
+      SELECT id, building_id, target_level, duration_seconds, started_at
+      FROM   construction_queue
+      WHERE  user_id = :uid
+      ORDER BY started_at
+      LIMIT  1
+    ''', {'uid': uid});
 
-    final qRes = await conn.execute(
-      'SELECT id, building_id, started_at, duration_seconds FROM construction_queue WHERE user_id = :uid',
-      {'uid': uid},
+    // Si no hay cola, devolvemos estado idle
+    if (qRes.rows.isEmpty) {
+      return Response.ok(jsonEncode({'ok': true, 'status': 'idle'}), headers: {
+        'Content-Type': 'application/json'
+      });
+    }
+
+    final q = qRes.rows.first.assoc();
+    final started  = DateTime.parse(q['started_at']!);
+    final dur      = int.parse(q['duration_seconds']!);
+    final finishAt = started.add(Duration(seconds: dur));
+    final now      = DateTime.now();
+
+    if (now.isBefore(finishAt)) {
+      // Aún en construcción: devolvemos remaining
+      final remaining = finishAt.difference(now).inSeconds;
+      return Response.ok(jsonEncode({
+        'ok': true,
+        'status': 'building',
+        'queue': [
+          {
+            'building': q['building_id'],
+            'target': int.parse(q['target_level']!),
+            'remaining': remaining
+          }
+        ],
+        'max': 2
+      }), headers: {'Content-Type': 'application/json'});
+    }
+
+    // Ya terminó: actualizamos nivel y borramos de la cola
+    final constructId = q['id']!;
+    final buildingId  = q['building_id']!;
+    final targetLevel = int.parse(q['target_level']!);
+
+    // ➋ Borrar de la cola
+    await conn.execute(
+      'DELETE FROM construction_queue WHERE id = :id',
+      {'id': constructId}
     );
 
-    if (qRes.rows.isEmpty) {
-      return Response.ok(jsonEncode({'status': 'idle'}));
-    }
+    // ➌ Actualizar nivel en buildings
+    await conn.execute('''
+      UPDATE buildings
+         SET ${buildingId}_level = :newLv
+       WHERE user_id = :uid
+    ''', {
+      'newLv': targetLevel,
+      'uid': uid
+    });
 
-    final row = qRes.rows.first;
-    final startedAt = DateTime.parse(row.colAt(2)!);
-    final duration = int.parse(row.colAt(3)!);
-    final finishTime = startedAt.add(Duration(seconds: duration));
-    final now = DateTime.now();
-
-    if (now.isAfter(finishTime)) {
-      await conn.execute(
-        'DELETE FROM construction_queue WHERE id = :id',
-        {'id': row.colAt(0)},
-      );
-
-      await conn.execute(
-        'UPDATE buildings SET ${row.colAt(1)}_level = ${row.colAt(1)}_level + 1 WHERE user_id = :uid',
-        {'uid': uid},
-      );
-
-      return Response.ok(jsonEncode({
-        'status': 'completed',
-        'building_id': row.colAt(1),
-      }));
-    }
-
+    // ➍ Responder con estado completed
     return Response.ok(jsonEncode({
-      'status': 'building',
-      'building_id': row.colAt(1),
-      'remaining_seconds': finishTime.difference(now).inSeconds
-    }));
+      'ok': true,
+      'status': 'completed',
+      'completed': {
+        'building': buildingId,
+        'level': targetLevel
+      },
+      'queue': [],  // ya no hay nada en cola
+      'max': 2
+    }), headers: {'Content-Type': 'application/json'});
   } catch (e) {
-    return Response(500, body: 'Error al revisar construcción: $e');
+    return Response.internalServerError(body: 'Status error: $e');
   }
 }

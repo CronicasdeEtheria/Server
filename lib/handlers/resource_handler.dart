@@ -1,112 +1,82 @@
+// lib/handlers/collect_resources_handler.dart
 import 'dart:convert';
 import 'package:shelf/shelf.dart';
-import 'package:mysql_client/mysql_client.dart';
 import 'package:guildserver/db/db.dart';
 
-final Map<String, int> baseProductionPerHour = {
-  'farm': 50,
-  'lumbermill': 30,
-  'stonemine': 20,
-};
-
 Future<Response> collectResourcesHandler(Request request) async {
-  final body = await request.readAsString();
-  final data = jsonDecode(body);
-  final uid = data['uid']?.toString();
+  final data = jsonDecode(await request.readAsString()) as Map<String,dynamic>;
+  final uid  = data['uid']?.toString();
   if (uid == null || uid.isEmpty) {
     return Response(400, body: 'Falta el uid.');
   }
 
   try {
-    final pool = await getConnection();
-    final res = await pool.execute(
+    final conn = await getConnection();
+
+    final res = await conn.execute(
       '''
-      SELECT
-        r.food,
-        r.wood,
-        r.stone,
-        r.last_updated,
-        b.farm_level,
-        b.lumbermill_level,
-        b.stone_mine_level,
-        b.warehouse_level
-      FROM resources r
-      JOIN buildings b ON r.user_id = b.user_id
-      WHERE r.user_id = :uid
+      SELECT  r.food, r.wood, r.stone, r.last_updated,
+              b.farm_level, b.lumbermill_level, b.stonemine_level, b.warehouse_level
+      FROM    resources r
+      JOIN    buildings b ON r.user_id = b.user_id
+      WHERE   r.user_id = :uid
       ''',
       {'uid': uid},
     );
 
-    if (res.rows.isEmpty) {
-      return Response(404, body: 'Usuario no encontrado.');
-    }
+    if (res.rows.isEmpty) return Response(404, body:'Usuario no encontrado.');
 
-    final row = res.rows.first.assoc();
-    final currentFood  = int.parse(row['food']!);
-    final currentWood  = int.parse(row['wood']!);
-    final currentStone = int.parse(row['stone']!);
+    final row   = res.rows.first.assoc();
+    int foodCur = int.parse(row['food'] ?? '0');
+    int woodCur = int.parse(row['wood'] ?? '0');
+    int stoneCur= int.parse(row['stone']?? '0');
 
-    final lastUpdated = DateTime.parse(row['last_updated']!);
-    final now = DateTime.now();
-    final elapsed = now.difference(lastUpdated);
+    final last  = DateTime.parse(row['last_updated']!);
+    final secs  = DateTime.now().difference(last).inSeconds;
 
-    final farmLevel      = int.parse(row['farm_level']!);
-    final lumberLevel    = int.parse(row['lumbermill_level']!);
-    final stoneLevel     = int.parse(row['stone_mine_level']!);
-    final warehouseLevel = int.parse(row['warehouse_level']!);
+    final farmLv   = int.parse(row['farm_level']     ?? '0');
+    final lumberLv = int.parse(row['lumbermill_level']??'0');
+    final mineLv   = int.parse(row['stonemine_level'] ??'0');
+    final wareLv   = int.parse(row['warehouse_level'] ??'0');
 
-    final maxCap = warehouseLevel * 500;
+    const rate = 50;                       // 50 por nivel y hora
+    int pending(int level) => (secs / 3600 * rate * level).floor();
 
-    // Producción pendiente
-    int computePending(int base, int level) =>
-        (elapsed.inSeconds / 3600 * base * level).floor();
+    final addFood  = _cap(pending(farmLv),   foodCur,  wareLv);
+    final addWood  = _cap(pending(lumberLv), woodCur,  wareLv);
+    final addStone = _cap(pending(mineLv),   stoneCur, wareLv);
 
-    final pendingFood  = computePending(baseProductionPerHour['farm']!, farmLevel);
-    final pendingWood  = computePending(baseProductionPerHour['lumbermill']!, lumberLevel);
-    final pendingStone = computePending(baseProductionPerHour['stonemine']!, stoneLevel);
-
-    // Función para no sobrepasar capacidad
-    int cap(int current, int add) {
-      final total = current + add;
-      return (total > maxCap ? maxCap - current : add).clamp(0, maxCap);
-    }
-
-    final addFood  = cap(currentFood,  pendingFood);
-    final addWood  = cap(currentWood,  pendingWood);
-    final addStone = cap(currentStone, pendingStone);
-
-    // Actualizar base de datos
-    await pool.execute(
+    await conn.execute(
       '''
       UPDATE resources SET
-        food = food + :addFood,
-        wood = wood + :addWood,
-        stone = stone + :addStone,
+        food  = food  + :f,
+        wood  = wood  + :w,
+        stone = stone + :s,
         last_updated = :now
       WHERE user_id = :uid
       ''',
       {
-        'addFood': addFood,
-        'addWood': addWood,
-        'addStone': addStone,
-        'now': now.toIso8601String(),
+        'f'  : addFood,
+        'w'  : addWood,
+        's'  : addStone,
+        'now': DateTime.now().toIso8601String(),
         'uid': uid,
       },
     );
 
     return Response.ok(jsonEncode({
-      'status': 'ok',
-      'collected': {
-        'food': addFood,
-        'wood': addWood,
-        'stone': addStone,
-      },
-      'next_collect': now.toIso8601String(),
-      'max_capacity': maxCap,
+      'ok': true,
+      'collected': {'food':addFood,'wood':addWood,'stone':addStone},
+      'max_capacity': wareLv * 500,
     }));
   } catch (e) {
-    return Response.internalServerError(
-      body: 'Error al recolectar recursos: $e',
-    );
+    return Response.internalServerError(body:'Error al recolectar: $e');
   }
+}
+
+// ‑‑‑ Helpers ‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑‑
+int _cap(int toAdd, int current, int wareLv) {
+  final cap = wareLv * 500;
+  final space = cap - current;
+  return toAdd > space ? space.clamp(0, cap) : toAdd;
 }
