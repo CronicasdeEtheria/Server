@@ -84,18 +84,25 @@ Future<Response> uploadGuildImageHandler(Request request) async {
 }
 
 Future<Response> getGuildImageHandler(Request request, String guildId) async {
-  final filePath = 'storage/guilds/$guildId.jpg';
-  final file = File(filePath);
+  // 1) Intentamos la imagen subida/copied
+  final storagePath = 'storage/guilds/$guildId.jpg';
+  File file = File(storagePath);
 
+  // 2) Si no existe, usamos un fallback genérico en assets
   if (!await file.exists()) {
-    return Response.notFound('Imagen no encontrada.');
+    final fallback = File('assets/guild_icons/default.png');
+    if (!await fallback.exists()) {
+      // Ni la fallback está: 404
+      return Response.notFound('Imagen no encontrada.');
+    }
+    file = fallback;
   }
 
-  final mimeType = lookupMimeType(filePath) ?? 'image/jpeg';
+  // 3) Detectamos MIME y devolvemos bytes
+  final mimeType = lookupMimeType(file.path) ?? 'application/octet-stream';
   final bytes = await file.readAsBytes();
-
   return Response.ok(bytes, headers: {
     'Content-Type': mimeType,
-    'Cache-Control': 'public, max-age=86400', // expire en 1 día
+    'Cache-Control': 'public, max-age=86400',
   });
 }

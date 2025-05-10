@@ -184,83 +184,92 @@ Future<Response> cancelConstruction(Request request) async {
     return Response.internalServerError(body: 'Cancel error: $e');
   }
 }
+
 Future<Response> checkConstructionStatus(Request request) async {
   try {
     final conn = await getConnection();
     final uid = request.headers['uid'];
-    if (uid == null || uid.isEmpty) return Response.forbidden('Token inválido.');
+    if (uid == null || uid.isEmpty) {
+      return Response.forbidden('Token inválido.');
+    }
 
-    // ➊ Obtenemos la primera obra en cola
+    // Obtenemos todas las obras en cola
     final qRes = await conn.execute('''
       SELECT id, building_id, target_level, duration_seconds, started_at
       FROM   construction_queue
       WHERE  user_id = :uid
-      ORDER BY started_at
-      LIMIT  1
+      ORDER BY started_at ASC
     ''', {'uid': uid});
 
-    // Si no hay cola, devolvemos estado idle
-    if (qRes.rows.isEmpty) {
-      return Response.ok(jsonEncode({'ok': true, 'status': 'idle'}), headers: {
-        'Content-Type': 'application/json'
+    final now = DateTime.now();
+    final List<Map<String, dynamic>> queueItems = [];
+
+    // Cambio aquí: id es String
+    String? firstCompletedId;
+    String? firstCompletedBuilding;
+    int? firstCompletedLevel;
+
+    for (final row in qRes.rows) {
+      final m = row.assoc();
+      final id       = m['id']!;                // String
+      final building = m['building_id']!;       // String
+      final target   = int.parse(m['target_level']!);
+      final dur      = int.parse(m['duration_seconds']!);
+      final started  = DateTime.parse(m['started_at']!);
+      final finishAt = started.add(Duration(seconds: dur));
+
+      if (now.isAfter(finishAt)) {
+        // Marcamos la primera completada
+        if (firstCompletedId == null) {
+          firstCompletedId        = id;
+          firstCompletedBuilding  = building;
+          firstCompletedLevel     = target;
+        }
+      } else {
+        final remaining = finishAt.difference(now).inSeconds;
+        queueItems.add({
+          'building': building,
+          'target': target,
+          'remaining': remaining,
+        });
+      }
+    }
+
+    Map<String, dynamic>? completed;
+    if (firstCompletedId != null) {
+      // Borrar de la cola
+      await conn.execute(
+        'DELETE FROM construction_queue WHERE id = :id',
+        {'id': firstCompletedId},
+      );
+      // Actualizar nivel
+      await conn.execute('''
+        UPDATE buildings
+           SET ${firstCompletedBuilding}_level = :newLv
+         WHERE user_id = :uid
+      ''', {
+        'newLv': firstCompletedLevel,
+        'uid': uid,
       });
+
+      completed = {
+        'building': firstCompletedBuilding,
+        'level': firstCompletedLevel,
+      };
     }
 
-    final q = qRes.rows.first.assoc();
-    final started  = DateTime.parse(q['started_at']!);
-    final dur      = int.parse(q['duration_seconds']!);
-    final finishAt = started.add(Duration(seconds: dur));
-    final now      = DateTime.now();
-
-    if (now.isBefore(finishAt)) {
-      // Aún en construcción: devolvemos remaining
-      final remaining = finishAt.difference(now).inSeconds;
-      return Response.ok(jsonEncode({
+    return Response.ok(
+      jsonEncode({
         'ok': true,
-        'status': 'building',
-        'queue': [
-          {
-            'building': q['building_id'],
-            'target': int.parse(q['target_level']!),
-            'remaining': remaining
-          }
-        ],
-        'max': 2
-      }), headers: {'Content-Type': 'application/json'});
-    }
-
-    // Ya terminó: actualizamos nivel y borramos de la cola
-    final constructId = q['id']!;
-    final buildingId  = q['building_id']!;
-    final targetLevel = int.parse(q['target_level']!);
-
-    // ➋ Borrar de la cola
-    await conn.execute(
-      'DELETE FROM construction_queue WHERE id = :id',
-      {'id': constructId}
+        'status': completed != null
+            ? 'completed'
+            : (queueItems.isEmpty ? 'idle' : 'building'),
+        if (completed != null) 'completed': completed,
+        'queue': queueItems,
+        'max': 2,
+      }),
+      headers: {'Content-Type': 'application/json'},
     );
-
-    // ➌ Actualizar nivel en buildings
-    await conn.execute('''
-      UPDATE buildings
-         SET ${buildingId}_level = :newLv
-       WHERE user_id = :uid
-    ''', {
-      'newLv': targetLevel,
-      'uid': uid
-    });
-
-    // ➍ Responder con estado completed
-    return Response.ok(jsonEncode({
-      'ok': true,
-      'status': 'completed',
-      'completed': {
-        'building': buildingId,
-        'level': targetLevel
-      },
-      'queue': [],  // ya no hay nada en cola
-      'max': 2
-    }), headers: {'Content-Type': 'application/json'});
   } catch (e) {
     return Response.internalServerError(body: 'Status error: $e');
   }

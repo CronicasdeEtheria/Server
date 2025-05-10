@@ -58,7 +58,9 @@ Future<void> main() async {
     ..get('/ranking', rankingHandler)
     ..get('/online_users', onlineUsersHandler)
   ..get ('/race/list',     raceListHandler)  // ← NUEVA
-..get('/unit/list', unitListHandler);
+..get('/unit/list', unitListHandler)
+    ..post('/guild/upload_image', uploadGuildImageHandler);
+
   // Rutas de administración (sin auth)
   final adminRoutes = Router()
     ..get('/admin/users', adminUsersHandler)
@@ -68,6 +70,7 @@ Future<void> main() async {
 
   // Rutas protegidas (requieren token en headers)
   final protectedRoutes = Router()
+    ..post('/battle/army', battleArmyHandler)
     ..post('/user/update_fcm', updateFcmTokenHandler)
     ..post('/user/profile', getUserProfile)
     ..post('/user/collect', collectResourcesHandler)
@@ -83,12 +86,12 @@ Future<void> main() async {
     ..post('/guild/join', joinGuildHandler)
     ..post('/guild/leave', leaveGuildHandler)
     ..post('/guild/info', getGuildInfoHandler)
-    ..post('/guild/upload_image', uploadGuildImageHandler)
     ..post('/guild/kick_member', kickMemberHandler)
     ..post('/guild/transfer_leadership', transferLeadershipHandler)
     ..post('/guild/update_info', updateGuildInfoHandler)
     ..post('/user/stats', getUserStatsHandler)
-    ..post('/user/battle_stats', getUserBattleStatsHandler);
+    ..post('/user/battle_stats', getUserBattleStatsHandler)
+    ..post('/chat/global/send', chatGlobalSendHandler);
 
   // Servir archivos estáticos de la carpeta `web/`
   final staticHandler = createStaticHandler('web', defaultDocument: 'index.html');

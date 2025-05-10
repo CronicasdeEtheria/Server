@@ -1,11 +1,8 @@
-// lib/handlers/unit_handler.dart
 
 import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import 'package:guildserver/catalog/unit_catalog.dart';
 
-/// Devuelve la lista de unidades disponibles para todas las razas.
-/// Cada objeto JSON incluye todos los campos necesarios (costes, tiempo, estadísticas…).
 Future<Response> unitListHandler(Request request) async {
   try {
     // Transformamos el Map<String, UnitData> en una lista de Map<String, dynamic>
