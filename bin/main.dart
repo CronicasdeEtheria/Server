@@ -139,8 +139,8 @@ Future<void> main() async {
       })
       .addHandler(handler);
 
-  // Levantar servidor
-  final server = await serve(pipeline, InternetAddress.anyIPv4, 8080);
+final port = int.parse(Platform.environment['PORT'] ?? '8080');
+final server = await serve(pipeline, InternetAddress.anyIPv4, port);
   print('Servidor iniciado en http://${server.address.host}:${server.port}');
 }
 

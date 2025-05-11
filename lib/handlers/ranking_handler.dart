@@ -2,11 +2,10 @@ import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import 'package:mysql_client/mysql_client.dart';
 import 'package:guildserver/db/db.dart';
-
 Future<Response> rankingHandler(Request request) async {
   final params = request.url.queryParameters;
   final type = params['type'] ?? 'elo';
-  final race = params['race'];
+  final raceFilter = params['race'];
   final limit = int.tryParse(params['limit'] ?? '20') ?? 20;
 
   try {
@@ -14,24 +13,22 @@ Future<Response> rankingHandler(Request request) async {
     List<Map<String, dynamic>> data;
 
     if (type == 'elo') {
-      // Construir SQL dinámico para filtrar por raza si viene
       final sql = '''
-        SELECT username, elo
+        SELECT username, race, elo
           FROM users
-        ${race != null ? 'WHERE race = :race' : ''}
+        ${raceFilter != null ? 'WHERE race = :race' : ''}
         ORDER BY elo DESC
         LIMIT :limit
       ''';
-      final args = <String, dynamic>{'limit': limit};
-      if (race != null) {
-        args['race'] = race;
-      }
+      final args = <String, dynamic>{ 'limit': limit };
+      if (raceFilter != null) args['race'] = raceFilter;
 
       final result = await pool.execute(sql, args);
       data = result.rows.map((row) {
         final r = row.assoc();
         return {
           'username': r['username']!,
+          'race': r['race']!,
           'elo': int.parse(r['elo']!),
         };
       }).toList();
@@ -41,7 +38,7 @@ Future<Response> rankingHandler(Request request) async {
 
     if (type == 'production') {
       final sql = '''
-        SELECT u.username,
+        SELECT u.username, u.race,
                (rs.total_food + rs.total_wood + rs.total_stone) AS produced_total
           FROM users u
           JOIN resource_stats rs ON u.id = rs.user_id
@@ -53,6 +50,7 @@ Future<Response> rankingHandler(Request request) async {
         final r = row.assoc();
         return {
           'username': r['username']!,
+          'race': r['race']!,
           'produced_total': int.parse(r['produced_total']!),
         };
       }).toList();
@@ -62,13 +60,13 @@ Future<Response> rankingHandler(Request request) async {
 
     if (type == 'victories') {
       final sql = '''
-        SELECT u.username,
+        SELECT u.username, u.race,
                COUNT(*) AS wins
           FROM battle_reports br
           JOIN users u
             ON (br.attacker_id = u.id AND br.winner = 'attacker')
            OR (br.defender_id = u.id AND br.winner = 'defender')
-         GROUP BY u.username
+         GROUP BY u.username, u.race
          ORDER BY wins DESC
          LIMIT :limit
       ''';
@@ -77,6 +75,7 @@ Future<Response> rankingHandler(Request request) async {
         final r = row.assoc();
         return {
           'username': r['username']!,
+          'race': r['race']!,
           'wins': int.parse(r['wins']!),
         };
       }).toList();
