@@ -27,6 +27,23 @@
         <p id="top-race">–</p>
       </div>
     </section>
+<!-- Controles del servidor -->
+<section class="server-controls">
+  <h2>Controles del Servidor</h2>
+  <button id="btn-restart">Reiniciar Servidor</button>
+  <button id="btn-refresh-log">Actualizar Log</button>
+  <pre id="server-log">Cargando log...</pre>
+</section>
+
+<!-- Chat global y broadcast -->
+<section class="chat-container">
+  <h2>Chat Global</h2>
+  <div id="chat-log" class="chat-log">Conectando al chat…</div>
+  <div class="chat-input">
+    <input type="text" id="broadcast-input" placeholder="Mensaje broadcast…">
+    <button id="btn-broadcast">Enviar</button>
+  </div>
+</section>
 
     <section class="chart-container">
       <canvas id="raceChart"></canvas>
