@@ -1,35 +1,30 @@
-// lib/handlers/log_handler.dart
+// lib/handlers/log_ws_handler.dart
 import 'dart:io';
-import 'dart:convert';
+import 'dart:async';
 import 'package:shelf/shelf.dart';
-
-/// Devuelve las últimas 100 líneas (o menos) del fichero de log
-Future<Response> adminLogHandler(Request req) async {
-  // Ruta configurable vía env LOG_PATH, o 'logs/server.log' por defecto
+import 'package:shelf_web_socket/shelf_web_socket.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+FutureOr<Response> logWebSocketHandler(Request request) {
   final logPath = Platform.environment['LOG_PATH'] ?? 'logs/server.log';
+  final file = File(logPath);
 
-  try {
-    final file = File(logPath);
-    if (!await file.exists()) {
-      return Response.notFound(
-        jsonEncode({'error': 'Log file not found at $logPath'}),
-        headers: {'Content-Type': 'application/json'},
-      );
+  return webSocketHandler((WebSocketChannel ws, String? protocol) {
+    // 1) Al conectar, envío las últimas 100 líneas
+    if (file.existsSync()) {
+      final lines = file.readAsLinesSync();
+      final tail = lines.length > 100
+          ? lines.sublist(lines.length - 100)
+          : lines;
+      for (var l in tail) ws.sink.add(l);
     }
 
-    // Leemos todas las líneas y tomamos las últimas 100
-    final allLines = await file.readAsLines();
-    final start = allLines.length > 100 ? allLines.length - 100 : 0;
-    final lastLines = allLines.sublist(start);
+    // 2) Luego “escucho” modificaciones y envío solo la línea nueva
+    final sub = file.watch(events: FileSystemEvent.modify).listen((_) {
+      final all = file.readAsLinesSync();
+      if (all.isNotEmpty) ws.sink.add(all.last);
+    });
 
-    return Response.ok(
-      jsonEncode({'lines': lastLines}),
-      headers: {'Content-Type': 'application/json'},
-    );
-  } catch (e) {
-    return Response.internalServerError(
-      body: jsonEncode({'error': 'Error reading log', 'details': e.toString()}),
-      headers: {'Content-Type': 'application/json'},
-    );
-  }
+    // Cuando el cliente cierro, cancelamos la escucha
+    ws.stream.listen((_) {}, onDone: () => sub.cancel());
+  })(request);
 }

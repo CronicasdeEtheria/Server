@@ -65,25 +65,6 @@ Future<Response> adminConnectedUsersHandler(Request request) async {
     );
   }
 }
-Future<Response> adminLogHandler(Request req) async {
-  // Usa la misma LOG_PATH de tu entorno o el default relativo
-  final logPath = Platform.environment['LOG_PATH'] ?? 'logs/server.log';
-  final file = File(logPath);
-  if (!await file.exists()) {
-    return Response.notFound(
-      jsonEncode({'error': 'Log no encontrado en $logPath'}),
-      headers: {'Content-Type': 'application/json'},
-    );
-  }
-  final lines = await file.readAsLines();
-  final recent = lines.length > 200
-      ? lines.sublist(lines.length - 200)
-      : lines;
-  return Response.ok(
-    jsonEncode({'lines': recent}),
-    headers: {'Content-Type': 'application/json'},
-  );
-}
 
 Future<Response> adminRestartHandler(Request req) async {
   try {

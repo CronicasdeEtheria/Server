@@ -2,15 +2,17 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dotenv/dotenv.dart';
-import 'package:crypto/crypto.dart';
+import 'package:guildserver/handlers/admin_log_handler.dart';
 import 'package:guildserver/handlers/race_handler.dart';
 import 'package:guildserver/handlers/unit_handler.dart';
-import 'package:logging/logging.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_static/shelf_static.dart';
 import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:logging/logging.dart';
+import 'package:logging_appenders/logging_appenders.dart';
 
 import 'package:guildserver/utils/timezone_config_utils.dart';
 import 'package:guildserver/db/db.dart';
@@ -20,6 +22,7 @@ import 'package:guildserver/middleware/auth_middleware.dart';
 import 'package:guildserver/handlers/admin_users_handler.dart';
 import 'package:guildserver/handlers/admin_connected_handler.dart';
 import 'package:guildserver/handlers/admin_race_stats_handler.dart';
+
 import 'package:guildserver/handlers/battle_handler.dart';
 import 'package:guildserver/handlers/build_handler.dart';
 import 'package:guildserver/handlers/chat_handler.dart';
@@ -48,31 +51,17 @@ Future<void> main() async {
   // Iniciar servicio de ticks de recursos
   ResourceTickService().start();
 
-  // Configuración de logging a fichero
+  // Configuración de logging con rotación (logging_appenders)
   final logPath = env['LOG_PATH'] ?? 'logs/server.log';
-  await Directory(logPath).parent.create(recursive: true);
-  final logFile = File(logPath);
-  final logSink = logFile.openWrite(mode: FileMode.append);
-
-  Logger.root.level = Level.ALL;
-  Logger.root.onRecord.listen((record) {
-    final msg =
-        '${record.time.toIso8601String()} [${record.level.name}] '
-        '${record.loggerName}: ${record.message}';
-    logSink.writeln(msg);
-    stdout.writeln(msg);
-  });
-
-  // Middleware para logging de peticiones HTTP
-  final requestLogger = (Handler inner) {
-    final logger = Logger('HTTP');
-    return (Request req) async {
-      logger.info('→ ${req.method} ${req.requestedUri}');
-      final resp = await inner(req);
-      logger.info('← ${resp.statusCode} ${req.method} ${req.requestedUri}');
-      return resp;
-    };
-  };
+ final logFile = File(logPath);
+final logSink = logFile.openWrite(mode: FileMode.append);
+Logger.root.level = Level.ALL;
+Logger.root.onRecord.listen((record) {
+  final time = record.time.toIso8601String().substring(0, 16);
+  final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message}';
+  logSink.writeln(msg);
+  stdout.writeln(msg);
+});
 
   // Rutas públicas (no requieren token)
   final publicRoutes = Router()
@@ -94,7 +83,9 @@ Future<void> main() async {
     ..get('/admin/connected_users', adminConnectedUsersHandler)
     ..get('/admin/server_time', serverTimeHandler)
     ..get('/admin/raza_stats', adminRazaStatsHandler)
-    ..get('/admin/log', adminLogHandler);
+    ..get('/ws/log', logWebSocketHandler)
+    ..post('/admin/restart', adminRestartHandler)
+    ..post('/admin/broadcast', adminBroadcastHandler);
 
   // Rutas protegidas (requieren token en headers)
   final protectedRoutes = Router()
@@ -143,9 +134,17 @@ Future<void> main() async {
       .add(authMiddleware()(protectedRoutes))
       .handler;
 
-  // Pipeline con logging y CORS
+  // Pipeline con logging HTTP y CORS
   final pipeline = Pipeline()
-      .addMiddleware(requestLogger)
+      .addMiddleware((inner) {
+        final logger = Logger('HTTP');
+        return (Request req) async {
+          logger.info('→ ${req.method} ${req.requestedUri}');
+          final resp = await inner(req);
+          logger.info('← ${resp.statusCode} ${req.method} ${req.requestedUri}');
+          return resp;
+        };
+      })
       .addMiddleware(logRequests())
       .addMiddleware((inner) {
         return (Request req) async {
@@ -162,11 +161,7 @@ Future<void> main() async {
 
   final port = int.parse(env['PORT'] ?? '8081');
   final server = await serve(pipeline, InternetAddress.anyIPv4, port);
-  print('Servidor iniciado en http://\${server.address.host}:\${server.port}');
-
-  // Cerrar el sink al terminar (no estrictamente necesario)
-  // await logSink.flush();
-  // await logSink.close();
+  print('Servidor iniciado en http://${server.address.host}:${server.port}');
 }
 
 // Handler para devolver hora del servidor en ISO8601

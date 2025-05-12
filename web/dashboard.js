@@ -119,11 +119,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Chat global
   const chatLogEl = document.getElementById('server-log');
-  const ws = new WebSocket(`wss://${location.host}/ws/chat`);
-  ws.onmessage = ev => {
+  const wsChat = new WebSocket(`wss://${location.host}/ws/chat`);
+  wsChat.onmessage = ev => {
     const { user, message, ts } = JSON.parse(ev.data);
     chatLogEl.textContent += `[${new Date(ts).toLocaleTimeString()}] <${user}>: ${message}\n`;
     chatLogEl.scrollTop = chatLogEl.scrollHeight;
+  };
+
+  // Log en tiempo real via WebSocket
+  const logPre = document.getElementById('server-log');
+  const wsLog = new WebSocket(`wss://${location.host}/ws/log`);
+  wsLog.onopen = () => logPre.textContent = '';
+  wsLog.onmessage = ({ data }) => {
+    logPre.textContent += data + '\n';
+    logPre.scrollTop = logPre.scrollHeight;
   };
 
   // Inicial
