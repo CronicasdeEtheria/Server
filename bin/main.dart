@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:crypto/crypto.dart';
+import 'package:guildserver/handlers/admin_log_handler.dart';
 import 'package:guildserver/handlers/race_handler.dart';
 import 'package:guildserver/handlers/unit_handler.dart';
 import 'package:logging/logging.dart';
@@ -94,8 +95,7 @@ Future<void> main() async {
     ..get('/admin/connected_users', adminConnectedUsersHandler)
     ..get('/admin/server_time', serverTimeHandler)
     ..get('/admin/raza_stats', adminRazaStatsHandler)
-    ..get('/admin/log', adminLogHandler);
-
+..get('/ws/log', logWebSocketHandler);
   // Rutas protegidas (requieren token en headers)
   final protectedRoutes = Router()
     ..post('/battle/army', battleArmyHandler)
