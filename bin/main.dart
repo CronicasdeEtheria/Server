@@ -57,8 +57,8 @@ Future<void> main() async {
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((record) {
     final msg =
-        '\${record.time.toIso8601String()} [\${record.level.name}] '
-        '\${record.loggerName}: \${record.message}';
+        '${record.time.toIso8601String()} [${record.level.name}] '
+        '${record.loggerName}: ${record.message}';
     logSink.writeln(msg);
     stdout.writeln(msg);
   });
@@ -67,9 +67,9 @@ Future<void> main() async {
   final requestLogger = (Handler inner) {
     final logger = Logger('HTTP');
     return (Request req) async {
-      logger.info('→ \${req.method} \${req.requestedUri}');
+      logger.info('→ ${req.method} ${req.requestedUri}');
       final resp = await inner(req);
-      logger.info('← \${resp.statusCode} \${req.method} \${req.requestedUri}');
+      logger.info('← ${resp.statusCode} ${req.method} ${req.requestedUri}');
       return resp;
     };
   };
