@@ -1,227 +1,21 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Dashboard | Crónicas de Etheria</title>
-  <!-- Chart.js -->
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root {
-      --bg: #121212;
-      --fg: #e0e0e0;
-      --panel-bg: #1f1f1f;
-      --accent: #ff6600;
-      --muted: #555;
-      --border: #272727;
-      --scroll-bg: rgba(255,255,255,0.1);
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body.dashboard {
-      display: flex;
-      background: var(--bg);
-      color: var(--fg);
-      font-family: 'Inter', sans-serif;
-      min-height: 100vh;
-    }
-    /* SIDEBAR */
-    .sidebar {
-      width: 240px;
-      background: var(--panel-bg);
-      display: flex;
-      flex-direction: column;
-      position: fixed;
-      height: 100%;
-      padding: 1rem;
-      transition: transform .3s ease;
-    }
-    body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
-    .brand h2 {
-      color: var(--accent);
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    .nav { flex:1; display:flex; flex-direction:column; gap:.5rem; }
-    .nav-link {
-      color: var(--fg);
-      padding: .6rem 1rem;
-      border-radius: .4rem;
-      text-decoration: none;
-      transition: background .2s;
-    }
-    .nav-link:hover, .nav-link.active {
-      background: var(--accent);
-      color: var(--bg);
-    }
-    .toggle-btn {
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 1.2rem;
-      cursor: pointer;
-      margin-top: 1rem;
-    }
-    /* MAIN */
-    .main {
-      margin-left: 240px;
-      flex:1;
-      display: flex;
-      flex-direction: column;
-      padding: 1rem;
-      transition: margin-left .3s ease;
-    }
-    body.sidebar-collapsed .main { margin-left: 0; }
-    /* TOPBAR */
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--panel-bg);
-      padding: .6rem 1rem;
-      border-radius: .4rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-      margin-bottom: 1rem;
-    }
-    .topbar-left h1 {
-      font-size: 1.2rem;
-    }
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    #server-time { font-family: monospace; color: var(--muted); }
-    .avatar { font-size: 1.4rem; }
-    /* CARDS */
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    .card {
-      background: var(--panel-bg);
-      padding: 1rem;
-      border-radius: .4rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-      text-align: center;
-    }
-    .card h3 {
-      color: var(--muted);
-      font-size: .9rem;
-      margin-bottom: .5rem;
-    }
-    .card p {
-      font-size: 1.6rem;
-      font-weight: bold;
-      color: var(--accent);
-    }
-    /* PANELS */
-    .panels {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    .panel {
-      background: var(--panel-bg);
-      padding: 1rem;
-      border-radius: .4rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-    }
-    .panel h4 {
-      margin-bottom: .5rem;
-      color: var(--muted);
-      font-size: .95rem;
-    }
-    .panel pre {
-      background: #0d0d0d;
-      padding: .75rem;
-      border-radius: .4rem;
-      height: 200px;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: .85rem;
-      border: 1px solid var(--border);
-    }
-    /* TABLE */
-    .table-panel {
-      background: var(--panel-bg);
-      padding: 1rem;
-      border-radius: .4rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-      margin-bottom: 1rem;
-    }
-    .table-panel h4 {
-      margin-bottom: .5rem;
-      color: var(--muted);
-      font-size: .95rem;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      padding: .6rem .8rem;
-      border-bottom: 1px solid var(--border);
-      font-size: .9rem;
-      text-align: left;
-    }
-    thead { background: #272727; position: sticky; top:0; }
-    /* CHAT */
-    .chat-panel {
-      background: var(--panel-bg);
-      padding: 1rem;
-      border-radius: .4rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-    }
-    .chat-panel h4 {
-      margin-bottom: .5rem;
-      color: var(--muted);
-      font-size: .95rem;
-    }
-    #chat-log {
-      background: #0d0d0d;
-      padding: .75rem;
-      border-radius: .4rem;
-      height: 150px;
-      overflow-y: auto;
-      font-size: .85rem;
-      border: 1px solid var(--border);
-      margin-bottom: .5rem;
-      white-space: pre-wrap;
-    }
-    .chat-input { display:flex; gap:0; }
-    .chat-input input {
-      flex:1;
-      padding:.5rem;
-      border:1px solid var(--border);
-      border-radius:.4rem 0 0 .4rem;
-      background: var(--panel-bg);
-      color: var(--fg);
-      outline:none;
-    }
-    .chat-input button {
-      padding:.5rem 1rem;
-      border:none;
-      background: var(--accent);
-      color: var(--bg);
-      border-radius:0 .4rem .4rem 0;
-      cursor:pointer;
-    }
-    /* RESPONSIVE */
-    @media (max-width: 800px) {
-      .panels { grid-template-columns: 1fr; }
-      body.sidebar-collapsed .sidebar { transform: translateX(0); }
-      body.sidebar-collapsed .main { margin-left:0; }
-    }
-  </style>
+  <script src="dashboard.js" defer></script>
 </head>
 <body class="dashboard">
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="brand"><h2>Etheria</h2></div>
+    <div class="brand">
+      <h2>Etheria</h2>
+    </div>
     <nav class="nav">
       <a href="#" class="nav-link active">🏠 Inicio</a>
       <a href="#" class="nav-link">📊 Estadísticas</a>
@@ -241,105 +35,58 @@
         <h1>Dashboard</h1>
       </div>
       <div class="topbar-right">
-        <span id="server-time">--:--:--</span>
+        <span id="clock">--:--:--</span>
         <div class="avatar">👤</div>
       </div>
     </header>
 
     <!-- OVERVIEW CARDS -->
     <section class="cards">
-      <div class="card"><h3>Total Usuarios</h3><p id="total-users">0</p></div>
-      <div class="card"><h3>En Línea</h3><p id="online-users">0</p></div>
-      <div class="card"><h3>Raza Top</h3><p id="top-race">—</p></div>
-      <div class="card"><h3>Batallas Hoy</h3><p id="battles-today">0</p></div>
+      <div class="card">
+        <h3>Total Usuarios</h3>
+        <p id="total-users">0</p>
+      </div>
+      <div class="card">
+        <h3>En Línea</h3>
+        <p id="online-users">0</p>
+      </div>
+      <div class="card">
+        <h3>Raza Top</h3>
+        <p id="top-race">—</p>
+      </div>
+      <div class="card">
+        <h3>Batallas Hoy</h3>
+        <p id="battles-today">0</p>
+      </div>
     </section>
 
     <!-- CHARTS + LOGS -->
     <section class="panels">
-      <div class="panel"><h4>Distribución de Razas</h4><canvas id="raceChart"></canvas></div>
-      <div class="panel"><h4>Registro de Servidor</h4><pre id="server-log">Cargando...</pre></div>
+      <div class="panel">
+        <h4>Distribución de Razas</h4>
+        <canvas id="raceChart"></canvas>
+      </div>
+      <div class="panel">
+        <h4>Registro de Servidor</h4>
+        <pre id="server-log">Cargando...</pre>
+      </div>
     </section>
 
     <!-- USERS TABLE -->
     <section class="table-panel">
       <h4>Usuarios Recientes</h4>
       <table>
-        <thead><tr><th>UID</th><th>Usuario</th><th>Elo</th><th>Raza</th><th>Gremio</th><th>Estado</th></tr></thead>
-        <tbody id="user-table"></tbody>
+        <thead>
+          <tr>
+            <th>UID</th><th>Usuario</th><th>Elo</th><th>Raza</th><th>Gremio</th><th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="user-table">
+          <!-- filas generadas por JS -->
+        </tbody>
       </table>
-    </section>
-
-    <!-- CHAT GLOBAL -->
-    <section class="chat-panel">
-      <h4>Chat Global</h4>
-      <div id="chat-log">Conectando...</div>
-      <div class="chat-input">
-        <input id="broadcast-input" placeholder="Mensaje...">
-        <button id="btn-broadcast">Enviar</button>
-      </div>
     </section>
   </div>
 
-  <script>
-    // Toggle sidebar
-    document.querySelectorAll('.toggle-btn').forEach(btn => btn.addEventListener('click', () => document.body.classList.toggle('sidebar-collapsed')));
-
-    // Fetch utility
-    const AUTH_HEADERS = { uid: localStorage.getItem('uid')||'', token: localStorage.getItem('token')||'' };
-    async function fetchJSON(url, opts={}) {
-      try { const res = await fetch(url, { headers: AUTH_HEADERS, ...opts }); if(!res.ok) throw new Error(res.status);
-        return res.json(); } catch(e) { console.warn('Fetch error',url,e); return null; }
-    }
-
-    let raceChart;
-    function renderRaceChart(stats) {
-      const labels = stats.map(r=>r.race), data=stats.map(r=>r.count);
-      if(raceChart){ raceChart.data.labels=labels; raceChart.data.datasets[0].data=data; raceChart.update(); }
-      else { const ctx=document.getElementById('raceChart').getContext('2d'); raceChart=new Chart(ctx,{ type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor:['#e84118','#00a8ff','#9c88ff','#44bd32','#fbc531'] }]}, options:{ plugins:{ legend:{ position:'right', labels:{ color:'#e0e0e0' }}}}}); }
-    }
-
-    async function updateStats() {
-      const [uR, oR, tR, rR] = await Promise.all([
-        fetchJSON('/admin/users'), fetchJSON('/admin/connected_users'), fetchJSON('/admin/server_time'), fetchJSON('/admin/raza_stats')
-      ]);
-      const users=Array.isArray(uR?.users)?uR.users:[], online=Array.isArray(oR?.users)?oR.users:[];
-      document.getElementById('server-time').textContent = tR?.server_time? new Date(tR.server_time).toLocaleString() : '—';
-      document.getElementById('total-users').textContent = users.length;
-      document.getElementById('online-users').textContent = online.length;
-      const rawR=Array.isArray(rR?.data)?rR.data:[];
-      if(rawR.length){ const top= rawR.reduce((p,c)=>c.count>p.count?c:p, rawR[0]); document.getElementById('top-race').textContent = `${top.race} (${top.count})`; }
-      const tbody=document.getElementById('user-table'); tbody.innerHTML = users.map(u=>{
-        const isOn = u.online===true || online.some(o=>o.uid===u.uid);
-        return `<tr class="${isOn?'online':'offline'}"><td>${u.uid}</td><td>${u.username}</td><td>${u.elo}</td><td>${u.race}</td><td>${u.guild||''}</td><td><span class="status-${isOn?'online':'offline'}">${isOn?'Online':'Offline'}</span></td></tr>`;
-      }).join('');
-      renderRaceChart(rawR);
-    }
-
-    async function fetchServerLog() {
-      const log = await fetchJSON('/admin/log');
-      document.getElementById('server-log').textContent = Array.isArray(log?.lines)?log.lines.join('\n'):'Error cargando log.';
-    }
-    document.getElementById('btn-refresh-log')?.addEventListener('click', fetchServerLog);
-    document.getElementById('btn-restart')?.addEventListener('click', async()=>{
-      if(confirm('¿Reiniciar el servidor?')){
-        const r=await fetchJSON('/admin/restart',{ method:'POST' }); alert(r? 'Servidor reiniciado.':'Error reiniciando.');
-      }
-    });
-    fetchServerLog();
-
-    // Chat via WS
-    const chatLog=document.getElementById('chat-log');
-    const wsProto = location.protocol==='https:'?'wss':'ws';
-    const ws=new WebSocket(`${wsProto}://${location.host}/ws/chat`);
-    ws.onmessage = e => { const {user,message,ts}=JSON.parse(e.data); chatLog.textContent+=`[${new Date(ts).toLocaleTimeString()}] <${user}>: ${message}\n`; chatLog.scrollTop=chatLog.scrollHeight; };
-    ws.onopen = ()=> chatLog.textContent='Conectado al chat.\n'; ws.onerror=()=> chatLog.textContent+='Error en WebSocket.\n';
-    document.getElementById('btn-broadcast')?.addEventListener('click', async()=>{
-      const msg=document.getElementById('broadcast-input').value.trim(); if(!msg) return;
-      await fetchJSON('/admin/broadcast',{ method:'POST', headers:{...AUTH_HEADERS,'Content-Type':'application/json'}, body:JSON.stringify({message:msg}) });
-      document.getElementById('broadcast-input').value='';
-    });
-
-    updateStats(); setInterval(updateStats, 10000);
-  </script>
 </body>
 </html>
