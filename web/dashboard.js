@@ -114,6 +114,48 @@ async function updateStats() {
   // 7) Finalmente, renderizamos el doughnut
   renderRaceChart(rawRaza);
 }
+// —————— Controles de servidor ——————
+async function fetchServerLog() {
+  const log = await fetchJSON('/admin/log');
+  document.getElementById('server-log').textContent =
+    Array.isArray(log?.lines) ? log.lines.join('\n') : 'Error cargando log.';
+}
+document.getElementById('btn-refresh-log')
+  .addEventListener('click', fetchServerLog);
+fetchServerLog(); // carga inicial
+
+document.getElementById('btn-restart')
+  .addEventListener('click', async () => {
+    if (!confirm('¿Reiniciar el servidor?')) return;
+    const resp = await fetch('/admin/restart', {
+      method: 'POST', headers: AUTH_HEADERS
+    });
+    alert(resp.ok ? 'Servidor reiniciado.' : 'Error reiniciando.');
+});
+
+// —————— Chat global via WebSocket ——————
+const chatLogEl = document.getElementById('chat-log');
+const ws = new WebSocket(`wss://${location.host}/ws/chat`);
+ws.onmessage = ev => {
+  const { user, message, ts } = JSON.parse(ev.data);
+  const line = `[${new Date(ts).toLocaleTimeString()}] <${user}>: ${message}`;
+  chatLogEl.textContent += line + '\n';
+  chatLogEl.scrollTop = chatLogEl.scrollHeight;
+};
+ws.onopen = () => chatLogEl.textContent = 'Conectado al chat.\n';
+ws.onerror = () => chatLogEl.textContent += 'Error en WebSocket.\n';
+
+document.getElementById('btn-broadcast')
+  .addEventListener('click', async () => {
+    const msg = document.getElementById('broadcast-input').value.trim();
+    if (!msg) return;
+    await fetch('/admin/broadcast', {
+      method: 'POST',
+      headers: {...AUTH_HEADERS, 'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg })
+    });
+    document.getElementById('broadcast-input').value = '';
+  });
 
 // Primera carga y refresco cada 10 segundos
 updateStats();

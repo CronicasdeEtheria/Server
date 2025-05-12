@@ -1,145 +1,134 @@
-/* =============================
-   RESET BASICO Y TIPOGRAFIA
-   ============================= */
-   * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  body {
-    font-family: 'Inter', sans-serif;
-    background: #fafafa;
-    color: #222;
-    line-height: 1.4;
-    min-height: 100vh;
-  }
-  
-  /* =============================
-     CONTENEDOR CENTRAL
-     ============================= */
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-  }
-  
-  /* =============================
-     CABECERA
-     ============================= */
-  header {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  header h1 {
-    font-size: 2rem;
-    margin-bottom: 0.25rem;
-  }
-  header small {
-    color: #666;
-    font-size: 0.9rem;
-  }
-  
-  /* =============================
-     TARJETAS DE ESTADISTICAS
-     ============================= */
-  .stats-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-  .card {
-    background: #fff;
-    padding: 1.2rem;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  }
-  .card h2 {
-    font-size: 1rem;
-    color: #555;
-  }
-  .card p {
-    font-size: 1.8rem;
-    font-weight: bold;
-    margin-top: 0.5rem;
-  }
-  
-  /* =============================
-     GRAFICO
-     ============================= */
-     .chart-container {
-        background: #fff;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        max-width: 400px;
-        margin: 0 auto 2rem;
-      
-        /* altura fija para que no se “cuelgue” en blanco */
-        height: 300px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      
-      .chart-container canvas {
-        /* obliga al gráfico a usar todo el ancho y alto disponibles */
-        width: 100% !important;
-        height: 100% !important;
-      }
-      
-  /* =============================
-     TABLA RESPONSIVA
-     ============================= */
-  .table-container {
-    overflow-x: auto;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  }
-  thead {
-    background: #f0f0f0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-  }
-  th, td {
-    padding: 0.75rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-    white-space: nowrap;
-  }
-  th {
-    font-weight: normal;
-    color: #555;
-  }
-  
-  /* =============================
-     FILAS ONLINE / OFFLINE
-     ============================= */
-  tr.online {
-    background: #e8f5e9;
-  }
-  tr.offline {
-    color: #999;
-  }
-  .status-online {
-    color: #44bd32;
-    font-weight: bold;
-  }
-  .status-offline {
-    color: #999;
-    font-weight: normal;
-  }
-  
-  /* =============================
-     HOVER FILA
-     ============================= */
-  tr:hover {
-    background: #fafafa;
-  }
-  
+:root {
+  --bg-page: #121212;
+  --fg-text: #e0e0e0;
+  --card-bg: #1e1e1e;
+  --primary: #ff8800;
+  --accent: #ffa94d;
+  --muted: #555;
+}
+
+* {
+  margin: 0; padding: 0; box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-page);
+  color: var(--fg-text);
+  line-height: 1.5;
+}
+
+a, button {
+  font-family: inherit;
+}
+
+/* Cards, tablas, gráficos */
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 1.5rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+header h1 {
+  font-size: 2rem;
+  color: var(--primary);
+}
+header small {
+  color: var(--muted);
+}
+
+/* Tarjetas */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.card {
+  background: var(--card-bg);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.card h2 { color: var(--accent); font-size: 1rem; }
+.card p  { font-size: 1.8rem; margin-top: 0.5rem; }
+
+/* Tabla */
+table {
+  width: 100%;
+  background: var(--card-bg);
+  border-collapse: collapse;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+th, td {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid #333;
+  color: var(--fg-text);
+}
+thead { background: #2a2a2a; position: sticky; top: 0; }
+
+/* Estados */
+tr.online { background: #243a1a; }
+tr.offline { color: #777; }
+.status-online { color: #44bd32; font-weight: bold; }
+.status-offline{ color: #777; }
+
+/* Nuevas secciones */
+.server-controls,
+.chat-container {
+  background: var(--card-bg);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  margin-bottom: 2rem;
+}
+.server-controls button {
+  background: var(--primary);
+  color: #000;
+  border: none;
+  padding: .6rem 1.2rem;
+  margin-right: .5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.server-controls pre {
+  background: #0d0d0d;
+  color: var(--fg-text);
+  height: 200px;
+  overflow-y: auto;
+  padding: .5rem;
+  border-radius: 4px;
+}
+.chat-log {
+  background: #0d0d0d;
+  color: var(--fg-text);
+  height: 200px;
+  overflow-y: auto;
+  padding: .5rem;
+  border-radius: 4px;
+  margin-bottom: .5rem;
+}
+.chat-input {
+  display: flex;
+}
+.chat-input input {
+  flex: 1;
+  padding: .5rem;
+  border-radius: 4px 0 0 4px;
+  border: 1px solid #333;
+  background: #1e1e1e;
+  color: var(--fg-text);
+}
+.chat-input button {
+  padding: .5rem 1rem;
+  border: none;
+  background: var(--primary);
+  color: #000;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
