@@ -67,7 +67,6 @@ print('Se actualiza');
     ..get('/admin/connected_users', adminConnectedUsersHandler)
     ..get('/admin/server_time', serverTimeHandler)
     ..get('/admin/raza_stats', adminRazaStatsHandler);
-
   // Rutas protegidas (requieren token en headers)
   final protectedRoutes = Router()
     ..post('/battle/army', battleArmyHandler)
