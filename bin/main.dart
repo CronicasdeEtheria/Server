@@ -57,8 +57,13 @@ Future<void> main() async {
 final logSink = logFile.openWrite(mode: FileMode.append);
 Logger.root.level = Level.ALL;
 Logger.root.onRecord.listen((record) {
-  final time = record.time.toIso8601String().substring(0, 16);
-  final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message}';
+final time = '${record.time.year.toString().padLeft(4, '0')}-'
+             '${record.time.month.toString().padLeft(2, '0')}-'
+             '${record.time.day.toString().padLeft(2, '0')}T'
+             '${record.time.hour.toString().padLeft(2, '0')}:'
+             '${record.time.minute.toString().padLeft(2, '0')}';
+final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message}';
+
   logSink.writeln(msg);
   stdout.writeln(msg);
 });
