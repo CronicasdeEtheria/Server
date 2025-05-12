@@ -9,8 +9,8 @@ void main() async {
   final env = DotEnv()..load();
   await initDb(env);
 
-  final server = await HttpServer.bind(InternetAddress.anyIPv4, 8081);
-  print('WebSocket Chat Server listening on ws://localhost:8081');
+  final server = await HttpServer.bind(InternetAddress.anyIPv4, 808);
+  print('WebSocket Chat Server listening on ws://localhost:8085');
 
   await for (final req in server) {
     if (WebSocketTransformer.isUpgradeRequest(req)) {

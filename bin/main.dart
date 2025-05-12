@@ -43,7 +43,7 @@ Future<void> main() async {
 
   // Inicializar conexión a BD
   await initDb(env);
-
+print('Se actualiza');
   // Iniciar servicio de ticks de recursos
   ResourceTickService().start();
 
@@ -139,7 +139,7 @@ Future<void> main() async {
       })
       .addHandler(handler);
 
-final port = int.parse(Platform.environment['PORT'] ?? '8080');
+final port = int.parse(env['PORT'] ?? '8081');
 final server = await serve(pipeline, InternetAddress.anyIPv4, port);
   print('Servidor iniciado en http://${server.address.host}:${server.port}');
 }
