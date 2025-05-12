@@ -3,54 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin Dashboard</title>
+  <title>Dashboard del Servidor</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Dashboard del Servidor</h1>
-      <small id="server-time">Cargando hora...</small>
+<body class="dashboard">
+
+  <main class="dashboard-grid">
+    <!-- HEADER -->
+    <header class="dashboard-header">
+      <h1 class="header-title">Dashboard del Servidor</h1>
+      <time id="server-time" class="header-time">Cargando hora…</time>
     </header>
 
-    <section class="stats-cards">
+    <!-- STATS CARDS -->
+    <section class="stats" aria-label="Estadísticas generales">
       <div class="card">
-        <h2>Total Usuarios</h2>
-        <p id="total-users">0</p>
+        <h2 class="card-title">Total Usuarios</h2>
+        <p id="total-users" class="card-value">0</p>
       </div>
       <div class="card">
-        <h2>Conectados</h2>
-        <p id="online-users">0</p>
+        <h2 class="card-title">Conectados</h2>
+        <p id="online-users" class="card-value">0</p>
       </div>
       <div class="card">
-        <h2>Raza más común</h2>
-        <p id="top-race">–</p>
+        <h2 class="card-title">Raza más común</h2>
+        <p id="top-race" class="card-value">–</p>
       </div>
     </section>
-<!-- Controles del servidor -->
-<section class="server-controls">
-  <h2>Controles del Servidor</h2>
-  <button id="btn-restart">Reiniciar Servidor</button>
-  <button id="btn-refresh-log">Actualizar Log</button>
-  <pre id="server-log">Cargando log...</pre>
-</section>
 
-<!-- Chat global y broadcast -->
-<section class="chat-container">
-  <h2>Chat Global</h2>
-  <div id="chat-log" class="chat-log">Conectando al chat…</div>
-  <div class="chat-input">
-    <input type="text" id="broadcast-input" placeholder="Mensaje broadcast…">
-    <button id="btn-broadcast">Enviar</button>
-  </div>
-</section>
+    <!-- SERVER CONTROLS -->
+    <section class="controls" aria-label="Controles del servidor">
+      <h2 class="section-title">Controles</h2>
+      <div class="controls-buttons">
+        <button id="btn-restart" class="btn">Reiniciar</button>
+        <button id="btn-refresh-log" class="btn">Actualizar Log</button>
+      </div>
+      <pre id="server-log" class="log">Cargando log…</pre>
+    </section>
 
-    <section class="chart-container">
+    <!-- CHART -->
+    <section class="chart" aria-label="Gráfica de razas">
       <canvas id="raceChart"></canvas>
     </section>
 
-    <section class="table-container">
-      <table>
+    <!-- CHAT GLOBAL -->
+    <section class="chat" aria-label="Chat global">
+      <h2 class="section-title">Chat Global</h2>
+      <div id="chat-log" class="chat-log">Conectando…</div>
+      <div class="chat-input">
+        <input type="text" id="broadcast-input" placeholder="Mensaje…" class="input" />
+        <button id="btn-broadcast" class="btn">Enviar</button>
+      </div>
+    </section>
+
+    <!-- USER TABLE -->
+    <section class="users" aria-label="Tabla de usuarios">
+      <table class="users-table">
         <thead>
           <tr>
             <th>UID</th>
@@ -63,11 +71,11 @@
           </tr>
         </thead>
         <tbody id="user-table">
-          <!-- Filas via JS -->
+          <!-- Filas generadas por JS -->
         </tbody>
       </table>
     </section>
-  </div>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="dashboard.js"></script>
