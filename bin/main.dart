@@ -80,7 +80,8 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
     ..get('/online_users', onlineUsersHandler)
     ..get('/race/list', raceListHandler)
     ..get('/unit/list', unitListHandler)
-    ..post('/guild/upload_image', uploadGuildImageHandler);
+    ..post('/guild/upload_image', uploadGuildImageHandler)
+    ..get('/ws/log', logWebSocketHandler);
 
   // Rutas de administración (sin auth)
   final adminRoutes = Router()
@@ -88,7 +89,6 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
     ..get('/admin/connected_users', adminConnectedUsersHandler)
     ..get('/admin/server_time', serverTimeHandler)
     ..get('/admin/raza_stats', adminRazaStatsHandler)
-    ..get('/ws/log', logWebSocketHandler)
     ..post('/admin/restart', adminRestartHandler)
     ..post('/admin/broadcast', adminBroadcastHandler);
 
