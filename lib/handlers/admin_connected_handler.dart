@@ -65,13 +65,13 @@ Future<Response> adminConnectedUsersHandler(Request request) async {
     );
   }
 }
-
 Future<Response> adminLogHandler(Request req) async {
-  const logPath = '/var/log/etheria/server.log'; // ajústalo
+  // Usa la misma LOG_PATH de tu entorno o el default relativo
+  final logPath = Platform.environment['LOG_PATH'] ?? 'logs/server.log';
   final file = File(logPath);
   if (!await file.exists()) {
     return Response.notFound(
-      jsonEncode({'error': 'Log no encontrado'}),
+      jsonEncode({'error': 'Log no encontrado en $logPath'}),
       headers: {'Content-Type': 'application/json'},
     );
   }
