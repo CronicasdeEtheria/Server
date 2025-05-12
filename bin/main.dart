@@ -5,6 +5,7 @@ import 'package:dotenv/dotenv.dart';
 import 'package:crypto/crypto.dart';
 import 'package:guildserver/handlers/race_handler.dart';
 import 'package:guildserver/handlers/unit_handler.dart';
+import 'package:logging/logging.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_static/shelf_static.dart';
@@ -33,7 +34,7 @@ import 'package:guildserver/handlers/train_handler.dart';
 import 'package:guildserver/handlers/user_battle_stats_handler.dart';
 import 'package:guildserver/handlers/user_handler.dart';
 import 'package:guildserver/handlers/users_stats_handler.dart';
-import '../lib/handlers/auth_handler.dart';
+import 'package:guildserver/handlers/auth_handler.dart';
 
 Future<void> main() async {
   // Carga de variables de entorno y configuración de zona horaria
@@ -43,9 +44,35 @@ Future<void> main() async {
 
   // Inicializar conexión a BD
   await initDb(env);
-print('Se actualiza');
+  print('Se actualiza');
   // Iniciar servicio de ticks de recursos
   ResourceTickService().start();
+
+  // Configuración de logging a fichero
+  final logPath = env['LOG_PATH'] ?? 'logs/server.log';
+  await Directory(logPath).parent.create(recursive: true);
+  final logFile = File(logPath);
+  final logSink = logFile.openWrite(mode: FileMode.append);
+
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    final msg =
+        '\${record.time.toIso8601String()} [\${record.level.name}] '
+        '\${record.loggerName}: \${record.message}';
+    logSink.writeln(msg);
+    stdout.writeln(msg);
+  });
+
+  // Middleware para logging de peticiones HTTP
+  final requestLogger = (Handler inner) {
+    final logger = Logger('HTTP');
+    return (Request req) async {
+      logger.info('→ \${req.method} \${req.requestedUri}');
+      final resp = await inner(req);
+      logger.info('← \${resp.statusCode} \${req.method} \${req.requestedUri}');
+      return resp;
+    };
+  };
 
   // Rutas públicas (no requieren token)
   final publicRoutes = Router()
@@ -57,8 +84,8 @@ print('Se actualiza');
     ..get('/chat/global/history', chatGlobalHistoryHandler)
     ..get('/ranking', rankingHandler)
     ..get('/online_users', onlineUsersHandler)
-  ..get ('/race/list',     raceListHandler)  // ← NUEVA
-..get('/unit/list', unitListHandler)
+    ..get('/race/list', raceListHandler)
+    ..get('/unit/list', unitListHandler)
     ..post('/guild/upload_image', uploadGuildImageHandler);
 
   // Rutas de administración (sin auth)
@@ -66,7 +93,9 @@ print('Se actualiza');
     ..get('/admin/users', adminUsersHandler)
     ..get('/admin/connected_users', adminConnectedUsersHandler)
     ..get('/admin/server_time', serverTimeHandler)
-    ..get('/admin/raza_stats', adminRazaStatsHandler);
+    ..get('/admin/raza_stats', adminRazaStatsHandler)
+    ..get('/admin/log', adminLogHandler);
+
   // Rutas protegidas (requieren token en headers)
   final protectedRoutes = Router()
     ..post('/battle/army', battleArmyHandler)
@@ -96,11 +125,6 @@ print('Se actualiza');
   final staticHandler = createStaticHandler('web', defaultDocument: 'index.html');
 
   // Componer cascade de handlers:
-  // 1) Favicon
-  // 2) Estáticos (HTML/CSS/JS)
-  // 3) Admin (sin auth)
-  // 4) Protegidas (con auth)
-  // 5) Públicas
   final handler = Cascade()
       .add((Request req) {
         if (req.url.path == 'favicon.ico') {
@@ -115,15 +139,13 @@ print('Se actualiza');
       })
       .add(staticHandler)
       .add(adminRoutes)
-
-
-        .add(publicRoutes)
+      .add(publicRoutes)
       .add(authMiddleware()(protectedRoutes))
-
       .handler;
 
   // Pipeline con logging y CORS
   final pipeline = Pipeline()
+      .addMiddleware(requestLogger)
       .addMiddleware(logRequests())
       .addMiddleware((inner) {
         return (Request req) async {
@@ -138,9 +160,13 @@ print('Se actualiza');
       })
       .addHandler(handler);
 
-final port = int.parse(env['PORT'] ?? '8081');
-final server = await serve(pipeline, InternetAddress.anyIPv4, port);
-  print('Servidor iniciado en http://${server.address.host}:${server.port}');
+  final port = int.parse(env['PORT'] ?? '8081');
+  final server = await serve(pipeline, InternetAddress.anyIPv4, port);
+  print('Servidor iniciado en http://\${server.address.host}:\${server.port}');
+
+  // Cerrar el sink al terminar (no estrictamente necesario)
+  // await logSink.flush();
+  // await logSink.close();
 }
 
 // Handler para devolver hora del servidor en ISO8601
