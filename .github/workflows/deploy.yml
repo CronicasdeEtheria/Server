@@ -24,6 +24,4 @@ jobs:
             git fetch --tags origin main
             git reset --hard origin/main
             dart pub get
-            # Opcional: compilar
-            dart compile exe bin/main.dart --output bin/server
             sudo systemctl restart etheria-server
