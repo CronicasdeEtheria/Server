@@ -92,7 +92,7 @@ async function updateStats() {
 async function fetchServerLog() {
   const log = await fetchJSON('/admin/log');
   document.getElementById('server-log').textContent =
-    Array.isArray(log?.lines) ? log.lines.join('n') : 'Error cargando log.';
+    Array.isArray(log?.lines) ? log.lines.join('\n') : 'Error cargando log.';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
