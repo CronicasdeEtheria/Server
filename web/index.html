@@ -1,83 +1,118 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dashboard del Servidor</title>
+  <title>Dashboard | Crónicas de Etheria</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="dashboard">
 
-  <main class="dashboard-grid">
-    <!-- HEADER -->
-    <header class="dashboard-header">
-      <h1 class="header-title">Dashboard del Servidor</h1>
-      <time id="server-time" class="header-time">Cargando hora…</time>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <h2>Etheria</h2>
+    </div>
+    <nav class="nav">
+      <a href="#" class="nav-link active">🏠 Inicio</a>
+      <a href="#" class="nav-link">📊 Estadísticas</a>
+      <a href="#" class="nav-link">⚔️ Batallas</a>
+      <a href="#" class="nav-link">🛡️ Gremios</a>
+      <a href="#" class="nav-link">⚙️ Configuración</a>
+    </nav>
+    <button class="toggle-btn" aria-label="Ocultar menú">≡</button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="toggle-btn" aria-label="Mostrar menú">≡</button>
+        <h1>Dashboard</h1>
+      </div>
+      <div class="topbar-right">
+        <span id="clock">--:--:--</span>
+        <div class="avatar">👤</div>
+      </div>
     </header>
 
-    <!-- STATS CARDS -->
-    <section class="stats" aria-label="Estadísticas generales">
+    <!-- OVERVIEW CARDS -->
+    <section class="cards">
       <div class="card">
-        <h2 class="card-title">Total Usuarios</h2>
-        <p id="total-users" class="card-value">0</p>
-      </div>
-      <div class="card">
-        <h2 class="card-title">Conectados</h2>
-        <p id="online-users" class="card-value">0</p>
+        <h3>Total Usuarios</h3>
+        <p id="total-users">0</p>
       </div>
       <div class="card">
-        <h2 class="card-title">Raza más común</h2>
-        <p id="top-race" class="card-value">–</p>
+        <h3>En Línea</h3>
+        <p id="online-users">0</p>
+      </div>
+      <div class="card">
+        <h3>Raza Top</h3>
+        <p id="top-race">—</p>
+      </div>
+      <div class="card">
+        <h3>Batallas Hoy</h3>
+        <p id="battles-today">0</p>
       </div>
     </section>
 
-    <!-- SERVER CONTROLS -->
-    <section class="controls" aria-label="Controles del servidor">
-      <h2 class="section-title">Controles</h2>
-      <div class="controls-buttons">
-        <button id="btn-restart" class="btn">Reiniciar</button>
-        <button id="btn-refresh-log" class="btn">Actualizar Log</button>
+    <!-- CHARTS + LOGS -->
+    <section class="panels">
+      <div class="panel">
+        <h4>Distribución de Razas</h4>
+        <canvas id="raceChart"></canvas>
       </div>
-      <pre id="server-log" class="log">Cargando log…</pre>
-    </section>
-
-    <!-- CHART -->
-    <section class="chart" aria-label="Gráfica de razas">
-      <canvas id="raceChart"></canvas>
-    </section>
-
-    <!-- CHAT GLOBAL -->
-    <section class="chat" aria-label="Chat global">
-      <h2 class="section-title">Chat Global</h2>
-      <div id="chat-log" class="chat-log">Conectando…</div>
-      <div class="chat-input">
-        <input type="text" id="broadcast-input" placeholder="Mensaje…" class="input" />
-        <button id="btn-broadcast" class="btn">Enviar</button>
+      <div class="panel">
+        <h4>Registro de Servidor</h4>
+        <pre id="server-log">Cargando...</pre>
       </div>
     </section>
 
-    <!-- USER TABLE -->
-    <section class="users" aria-label="Tabla de usuarios">
-      <table class="users-table">
+    <!-- USERS TABLE -->
+    <section class="table-panel">
+      <h4>Usuarios Recientes</h4>
+      <table>
         <thead>
           <tr>
-            <th>UID</th>
-            <th>Usuario</th>
-            <th>Email</th>
-            <th>Elo</th>
-            <th>Raza</th>
-            <th>Gremio</th>
-            <th>Estado</th>
+            <th>UID</th><th>Usuario</th><th>Elo</th><th>Raza</th><th>Gremio</th><th>Estado</th>
           </tr>
         </thead>
         <tbody id="user-table">
-          <!-- Filas generadas por JS -->
+          <!-- filas generadas por JS -->
         </tbody>
       </table>
     </section>
-  </main>
+  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="dashboard.js"></script>
+  <script>
+    // Toggle sidebar
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.body.classList.toggle('sidebar-collapsed');
+      });
+    });
+
+    // Live clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent = now.toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Ejemplo de Chart.js
+    const ctx = document.getElementById('raceChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Humano','Elfo','Enano','Orco'],
+        datasets: [{ data: [12, 19, 3, 5], borderWidth: 0 }]
+      },
+      options: { plugins:{ legend:{ position:'bottom', labels:{ color:'#e0e0e0' }} } }
+    });
+  </script>
 </body>
 </html>
