@@ -170,6 +170,43 @@ th, td {
   text-align: left;
 }
 thead { background: #272727; position: sticky; top:0; }
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+#chat-log {
+  flex: 1;
+  overflow-y: auto;
+  background: #1e1e1e;
+  padding: 8px;
+  color: #eee;
+  border-radius: 4px;
+}
+.chat-send {
+  display: flex;
+  margin-top: 8px;
+}
+#chat-input {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 4px 0 0 4px;
+  border: 1px solid #444;
+  background: #2b2b2b;
+  color: #fff;
+}
+#chat-send-btn {
+  padding: 6px 12px;
+  border: none;
+  background: #00a8ff;
+  color: #fff;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
+#chat-send-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 
 /* RESPONSIVE */
 @media (max-width: 800px) {
