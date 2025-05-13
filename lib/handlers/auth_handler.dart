@@ -58,7 +58,7 @@ Future<Response> registerHandler(Request request) async {
       '''
       INSERT INTO buildings
         (user_id, townhall_level, farm_level, lumbermill_level,
-         stonemine_level, warehouse_level)
+         stone_mine_level, warehouse_level)
       VALUES (:uid, 1, 1, 1, 1, 1)
       ''',
       {'uid': uid},
