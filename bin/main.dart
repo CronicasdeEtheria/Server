@@ -68,11 +68,8 @@ Future<void> main() async {
 
   final adminRoutes = Router()
     ..get('/admin/users', adminUsersHandler)
-    ..get('/admin/connected_users', adminConnectedUsersHandler)
     ..get('/admin/server_time', serverTimeHandler)
-    ..get('/admin/raza_stats', adminRazaStatsHandler)
-    ..post('/admin/restart', adminRestartHandler)
-    ..post('/admin/broadcast', adminBroadcastHandler);
+    ..get('/admin/raza_stats', adminRazaStatsHandler);
 
   final protectedRoutes = Router()
     ..post('/battle/army', battleArmyHandler)
