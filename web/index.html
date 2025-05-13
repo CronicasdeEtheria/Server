@@ -70,10 +70,21 @@
         <h4>Registro de Servidor</h4>
         <pre id="server-log">Cargando log...</pre>
       </div>
-      <div class="panel">
-        <h4>Chat Global</h4>
-        <pre id="chat-log">Cargando chat...</pre>
-      </div>
+ <div class="panel chat-panel">
+    <h4>Chat Global</h4>
+    <pre id="chat-log">Cargando chat...</pre>
+
+    <!-- Formulario de envío -->
+    <div class="chat-send">
+      <input
+        type="text"
+        id="chat-input"
+        placeholder="Escribe un mensaje..."
+        autocomplete="off"
+      />
+      <button id="chat-send-btn">Enviar</button>
+    </div>
+  </div>
     </section>
 
 
