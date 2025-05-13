@@ -134,8 +134,8 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
         return Response.notFound('');
       })
       .add(staticHandler)
-      .add(adminRoutes)
       .add(publicRoutes)
+      .add(adminRoutes)
       .add(authMiddleware()(protectedRoutes))
       .handler;
 
