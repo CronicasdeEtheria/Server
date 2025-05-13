@@ -12,7 +12,6 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:logging/logging.dart';
-import 'package:logging_appenders/logging_appenders.dart';
 
 import 'package:guildserver/utils/timezone_config_utils.dart';
 import 'package:guildserver/db/db.dart';
@@ -51,22 +50,17 @@ Future<void> main() async {
   // Iniciar servicio de ticks de recursos
   ResourceTickService().start();
 
-  // Configuración de logging con rotación (logging_appenders)
+  // Configuración de logging
   final logPath = env['LOG_PATH'] ?? 'logs/server.log';
- final logFile = File(logPath);
-final logSink = logFile.openWrite(mode: FileMode.append);
-Logger.root.level = Level.ALL;
-Logger.root.onRecord.listen((record) {
-final time = '${record.time.year.toString().padLeft(4, '0')}-'
-             '${record.time.month.toString().padLeft(2, '0')}-'
-             '${record.time.day.toString().padLeft(2, '0')}T'
-             '${record.time.hour.toString().padLeft(2, '0')}:'
-             '${record.time.minute.toString().padLeft(2, '0')}';
-final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message}';
-
-  logSink.writeln(msg);
-  stdout.writeln(msg);
-});
+  final logFile = File(logPath);
+  final logSink = logFile.openWrite(mode: FileMode.append);
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    final time = record.time.toIso8601String().substring(0, 16);
+    final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message}';
+    logSink.writeln(msg);
+    stdout.writeln(msg);
+  });
 
   // Rutas públicas (no requieren token)
   final publicRoutes = Router()
@@ -83,7 +77,6 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
     ..post('/guild/upload_image', uploadGuildImageHandler)
     ..get('/ws/log', logWebSocketHandler);
 
-
   // Rutas de administración (sin auth)
   final adminRoutes = Router()
     ..get('/admin/users', adminUsersHandler)
@@ -92,6 +85,7 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
     ..get('/admin/raza_stats', adminRazaStatsHandler)
     ..post('/admin/restart', adminRestartHandler)
     ..post('/admin/broadcast', adminBroadcastHandler);
+
   // Rutas protegidas (requieren token en headers)
   final protectedRoutes = Router()
     ..post('/battle/army', battleArmyHandler)
@@ -120,7 +114,7 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
   // Servir archivos estáticos de la carpeta `web/`
   final staticHandler = createStaticHandler('web', defaultDocument: 'index.html');
 
-  // Componer cascade de handlers:
+    // Componer cascade de handlers:
   final handler = Cascade()
       .add((Request req) {
         if (req.url.path == 'favicon.ico') {
@@ -133,9 +127,12 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
         }
         return Response.notFound('');
       })
-      .add(staticHandler)
+      // WS log y rutas públicas deben ir antes de servir estáticos
       .add(publicRoutes)
       .add(adminRoutes)
+      // Archivos estáticos (HTML/CSS/JS)
+      .add(createStaticHandler('web', defaultDocument: 'index.html'))
+      // Rutas protegidas (con auth)
       .add(authMiddleware()(protectedRoutes))
       .handler;
 
