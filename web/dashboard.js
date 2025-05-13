@@ -88,12 +88,7 @@ async function updateStats() {
   renderRaceChart(rawRaza);
 }
 
-// Logs y reinicio
-async function fetchServerLog() {
-  const log = await fetchJSON('/admin/log');
-  document.getElementById('server-log').textContent =
-    Array.isArray(log?.lines) ? log.lines.join('\n') : 'Error cargando log.';
-}
+
 
 document.addEventListener('DOMContentLoaded', () => {
   // Toggle sidebar
@@ -136,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Inicial
-  fetchServerLog();
   updateStats();
   setInterval(updateStats, 10000);
 });
