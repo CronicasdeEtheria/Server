@@ -90,8 +90,8 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
     ..get('/admin/server_time', serverTimeHandler)
     ..get('/admin/raza_stats', adminRazaStatsHandler)
     ..post('/admin/restart', adminRestartHandler)
-    ..post('/admin/broadcast', adminBroadcastHandler);
-
+    ..post('/admin/broadcast', adminBroadcastHandler)
+    ..get('/admin/log', adminBroadcastHandler);
   // Rutas protegidas (requieren token en headers)
   final protectedRoutes = Router()
     ..post('/battle/army', battleArmyHandler)
