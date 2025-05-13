@@ -36,11 +36,34 @@ import 'package:guildserver/handlers/user_handler.dart';
 import 'package:guildserver/handlers/users_stats_handler.dart';
 import 'package:guildserver/handlers/auth_handler.dart';
 
+/// Asigna aldeas a todos los usuarios sin aldea al iniciar el servidor
+Future<void> assignMissingVillagesAtStartup() async {
+  final conn = await getConnection();
+  // Encuentra usuarios sin aldea
+  final res = await conn.execute(
+    '''
+    SELECT u.id
+      FROM users u
+      LEFT JOIN villages v ON v.player_id = u.id
+     WHERE v.id IS NULL
+    '''
+  );
+  for (final row in res.rows) {
+    final pid = row.colAt(0) as String;
+    await conn.execute(
+      'CALL assign_village_to_player(:playerId, @map, @x, @y)',
+      {'playerId': pid},
+    );
+  }
+}
+
 Future<void> main() async {
   final env = DotEnv(includePlatformEnvironment: true)..load();
   final timezone = env['TZ'] ?? 'America/Argentina/Buenos_Aires';
   configureTimezone(timezone);
   await initDb(env);
+  // Asignar aldeas faltantes a usuarios existentes al iniciar el servidor
+  await assignMissingVillagesAtStartup();
   ResourceTickService().start();
 
   final logPath = env['LOG_PATH'] ?? 'logs/server.log';
