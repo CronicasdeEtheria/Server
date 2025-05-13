@@ -12,6 +12,8 @@ class MapsHandler {
     router.get('/', _getMaps);
     router.get('/<mapId>/villages', _getVillages);
     router.post('/<mapId>/assign', _assignVillage);
+    // Admin: Asignar aldeas faltantes a usuarios existentes
+    router.post('/assign_missing', _assignMissingVillages);
     return router;
   }
 
@@ -38,7 +40,6 @@ class MapsHandler {
       return Response(400, body: 'mapId inválido');
     }
     final conn = await getConnection();
-    // Usamos placeholder nombrado en vez de '?' y lista
     final res = await conn.execute(
       '''
       SELECT v.id, v.player_id, u.username, v.x_coord, v.y_coord
@@ -84,6 +85,33 @@ class MapsHandler {
         'y':      (r.colAt(2) as num).toDouble(),
       }),
       headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  /// Admin: Asigna aldeas a todos los usuarios que no tengan una asignada
+  Future<Response> _assignMissingVillages(Request req) async {
+    final conn = await getConnection();
+    // Selecciona ids de usuarios sin aldea
+    final res = await conn.execute(
+      '''
+      SELECT u.id
+        FROM users u
+        LEFT JOIN villages v ON v.player_id = u.id
+       WHERE v.id IS NULL
+      '''
+    );
+    int count = 0;
+    for (final row in res.rows) {
+      final pid = row.colAt(0) as String;
+      await conn.execute(
+        'CALL assign_village_to_player(:playerId, @map, @x, @y)',
+        {'playerId': pid},
+      );
+      count++;
+    }
+    return Response.ok(
+      'Aldeas asignadas a $count usuarios.',
+      headers: {'Content-Type': 'text/plain'},
     );
   }
 }
