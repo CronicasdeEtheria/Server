@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dotenv/dotenv.dart';
 import 'package:guildserver/handlers/admin_log_handler.dart';
+import 'package:guildserver/handlers/map_handler.dart';
 import 'package:guildserver/handlers/race_handler.dart';
 import 'package:guildserver/handlers/unit_handler.dart';
+import 'package:guildserver/handlers/village_interaction_handler.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_static/shelf_static.dart';
@@ -52,6 +54,7 @@ Future<void> main() async {
     stdout.writeln(msg);
   });
 
+  // Rutas públicas
   final publicRoutes = Router()
     ..post('/auth/register', registerHandler)
     ..post('/auth/login', loginHandler)
@@ -64,13 +67,17 @@ Future<void> main() async {
     ..get('/race/list', raceListHandler)
     ..get('/unit/list', unitListHandler)
     ..post('/guild/upload_image', uploadGuildImageHandler)
-    ..get('/ws/log', logWebSocketHandler);
+    ..get('/ws/log', logWebSocketHandler)
+    // Mapas públicos
+    ..mount('/maps', MapsHandler().router);
 
+  // Rutas de administrador
   final adminRoutes = Router()
     ..get('/admin/users', adminUsersHandler)
     ..get('/admin/server_time', serverTimeHandler)
     ..get('/admin/raza_stats', adminRazaStatsHandler);
 
+  // Rutas protegidas (requieren JWT)
   final protectedRoutes = Router()
     ..post('/battle/army', battleArmyHandler)
     ..post('/user/update_fcm', updateFcmTokenHandler)
@@ -93,8 +100,12 @@ Future<void> main() async {
     ..post('/guild/update_info', updateGuildInfoHandler)
     ..post('/user/stats', getUserStatsHandler)
     ..post('/user/battle_stats', getUserBattleStatsHandler)
-    ..post('/chat/global/send', chatGlobalSendHandler);
+    ..post('/chat/global/send', chatGlobalSendHandler)
+    // Aldea: espionaje y ataque
+    ..post('/villages/<villageId>/spy', spyHandler)
+    ..post('/villages/<villageId>/attack', attackHandler);
 
+  // Cascade principal
   final handler = Cascade()
       .add((Request req) {
         if (req.url.path == 'favicon.ico') {
