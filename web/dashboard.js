@@ -119,17 +119,33 @@ document.addEventListener('DOMContentLoaded', () => {
   wsChat.onerror = err => console.error('WS chat error', err);
 
   // ——— Log de Servidor via WS ———
-  const logPre = document.getElementById('server-log');
-  const wsLog = new WebSocket(`wss://${location.host}/ws/log`);
-  wsLog.onopen = () => logPre.textContent = '';
-  wsLog.onmessage = ({ data }) => {
-    logPre.textContent += data + '\n';
-    logPre.scrollTop = logPre.scrollHeight;
-  };
-  wsLog.onerror = err => console.error('WS log error', err);
-  wsLog.onclose = () => {
-    logPre.textContent += '\n― conexión de log cerrada ―';
-  };
+const logPre = document.getElementById('server-log');
+// Elige ws o wss según estés en HTTP o HTTPS
+const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+// Si tu Shelf corre en el mismo host/puerto que el HTML:
+const wsUrl = `${wsProtocol}://${location.host}/ws/log`;
+// Si corre en otro puerto, por ejemplo 8081, usar:
+// const wsUrl = `${wsProtocol}://${location.hostname}:8081/ws/log`;
+
+const wsLog = new WebSocket(wsUrl);
+
+wsLog.addEventListener('open', () => {
+  logPre.textContent = '';  // limpia el mensaje inicial
+});
+
+wsLog.addEventListener('message', (evt) => {
+  logPre.textContent += evt.data + '\n';
+  logPre.scrollTop = logPre.scrollHeight;
+});
+
+wsLog.addEventListener('error', (err) => {
+  console.error('Error WS log:', err);
+  logPre.textContent += '\n― error de conexión al log ―';
+});
+
+wsLog.addEventListener('close', () => {
+  logPre.textContent += '\n― conexión de log cerrada ―';
+});
 
   // Carga inicial de estadísticas
   updateStats();
