@@ -83,6 +83,7 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
     ..post('/guild/upload_image', uploadGuildImageHandler)
     ..get('/ws/log', logWebSocketHandler);
 
+
   // Rutas de administración (sin auth)
   final adminRoutes = Router()
     ..get('/admin/users', adminUsersHandler)
@@ -90,8 +91,7 @@ final msg = '$time [${record.level.name}] ${record.loggerName}: ${record.message
     ..get('/admin/server_time', serverTimeHandler)
     ..get('/admin/raza_stats', adminRazaStatsHandler)
     ..post('/admin/restart', adminRestartHandler)
-    ..post('/admin/broadcast', adminBroadcastHandler)
-    ..get('/admin/log', adminBroadcastHandler);
+    ..post('/admin/broadcast', adminBroadcastHandler);
   // Rutas protegidas (requieren token en headers)
   final protectedRoutes = Router()
     ..post('/battle/army', battleArmyHandler)
