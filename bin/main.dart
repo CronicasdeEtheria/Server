@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:dotenv/dotenv.dart';
 import 'package:guildserver/handlers/admin_log_handler.dart';
 import 'package:guildserver/handlers/race_handler.dart';
@@ -12,16 +11,13 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:logging/logging.dart';
-
 import 'package:guildserver/utils/timezone_config_utils.dart';
 import 'package:guildserver/db/db.dart';
 import 'package:guildserver/services/resources_tick_service.dart';
 import 'package:guildserver/middleware/auth_middleware.dart';
-
 import 'package:guildserver/handlers/admin_users_handler.dart';
 import 'package:guildserver/handlers/admin_connected_handler.dart';
 import 'package:guildserver/handlers/admin_race_stats_handler.dart';
-
 import 'package:guildserver/handlers/battle_handler.dart';
 import 'package:guildserver/handlers/build_handler.dart';
 import 'package:guildserver/handlers/chat_handler.dart';
@@ -39,18 +35,12 @@ import 'package:guildserver/handlers/users_stats_handler.dart';
 import 'package:guildserver/handlers/auth_handler.dart';
 
 Future<void> main() async {
-  // Carga de variables de entorno y configuración de zona horaria
   final env = DotEnv(includePlatformEnvironment: true)..load();
   final timezone = env['TZ'] ?? 'America/Argentina/Buenos_Aires';
   configureTimezone(timezone);
-
-  // Inicializar conexión a BD
   await initDb(env);
-  print('Se actualiza');
-  // Iniciar servicio de ticks de recursos
   ResourceTickService().start();
 
-  // Configuración de logging
   final logPath = env['LOG_PATH'] ?? 'logs/server.log';
   final logFile = File(logPath);
   final logSink = logFile.openWrite(mode: FileMode.append);
@@ -62,7 +52,6 @@ Future<void> main() async {
     stdout.writeln(msg);
   });
 
-  // Rutas públicas (no requieren token)
   final publicRoutes = Router()
     ..post('/auth/register', registerHandler)
     ..post('/auth/login', loginHandler)
@@ -77,7 +66,6 @@ Future<void> main() async {
     ..post('/guild/upload_image', uploadGuildImageHandler)
     ..get('/ws/log', logWebSocketHandler);
 
-  // Rutas de administración (sin auth)
   final adminRoutes = Router()
     ..get('/admin/users', adminUsersHandler)
     ..get('/admin/connected_users', adminConnectedUsersHandler)
@@ -86,7 +74,6 @@ Future<void> main() async {
     ..post('/admin/restart', adminRestartHandler)
     ..post('/admin/broadcast', adminBroadcastHandler);
 
-  // Rutas protegidas (requieren token en headers)
   final protectedRoutes = Router()
     ..post('/battle/army', battleArmyHandler)
     ..post('/user/update_fcm', updateFcmTokenHandler)
@@ -111,10 +98,6 @@ Future<void> main() async {
     ..post('/user/battle_stats', getUserBattleStatsHandler)
     ..post('/chat/global/send', chatGlobalSendHandler);
 
-  // Servir archivos estáticos de la carpeta `web/`
-  final staticHandler = createStaticHandler('web', defaultDocument: 'index.html');
-
-    // Componer cascade de handlers:
   final handler = Cascade()
       .add((Request req) {
         if (req.url.path == 'favicon.ico') {
@@ -127,16 +110,12 @@ Future<void> main() async {
         }
         return Response.notFound('');
       })
-      // WS log y rutas públicas deben ir antes de servir estáticos
       .add(publicRoutes)
       .add(adminRoutes)
-      // Archivos estáticos (HTML/CSS/JS)
       .add(createStaticHandler('web', defaultDocument: 'index.html'))
-      // Rutas protegidas (con auth)
       .add(authMiddleware()(protectedRoutes))
       .handler;
 
-  // Pipeline con logging HTTP y CORS
   final pipeline = Pipeline()
       .addMiddleware((inner) {
         final logger = Logger('HTTP');
@@ -166,10 +145,7 @@ Future<void> main() async {
   print('Servidor iniciado en http://${server.address.host}:${server.port}');
 }
 
-// Handler para devolver hora del servidor en ISO8601
 Response serverTimeHandler(Request request) {
   final now = tz.TZDateTime.now(tz.local);
-  return Response.ok(jsonEncode({
-    'server_time': now.toIso8601String(),
-  }));
+  return Response.ok(jsonEncode({'server_time': now.toIso8601String()}));
 }
