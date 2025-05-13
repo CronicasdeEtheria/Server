@@ -1,5 +1,3 @@
-// dashboard.js
-
 // Autorización
 const AUTH_HEADERS = {
   uid: localStorage.getItem('uid') || '',
@@ -64,7 +62,7 @@ async function updateStats() {
   // Top raza
   const rawRaza = Array.isArray(razaResp?.data) ? razaResp.data : [];
   if (rawRaza.length) {
-    const top = rawRaza.reduce((a,b) => b.count>a.count?b:a, rawRaza[0]);
+    const top = rawRaza.reduce((a,b) => b.count > a.count ? b : a, rawRaza[0]);
     document.getElementById('top-race').textContent = `${top.race} (${top.count})`;
   }
 
@@ -88,8 +86,6 @@ async function updateStats() {
   renderRaceChart(rawRaza);
 }
 
-
-
 document.addEventListener('DOMContentLoaded', () => {
   // Toggle sidebar
   document.querySelectorAll('.toggle-btn').forEach(btn =>
@@ -98,30 +94,31 @@ document.addEventListener('DOMContentLoaded', () => {
     )
   );
 
-  // Clock
+  // Reloj local
   setInterval(() => {
     const now = new Date();
     document.getElementById('clock').textContent = now.toLocaleTimeString();
   }, 1000);
 
-  // Botones de log y restart
-  document.getElementById('btn-refresh-log')?.addEventListener('click', fetchServerLog);
+  // Botón de reinicio (opcional)
   document.getElementById('btn-restart')?.addEventListener('click', async () => {
     if (!confirm('¿Reiniciar el servidor?')) return;
     const resp = await fetch('/admin/restart', { method:'POST', headers: AUTH_HEADERS });
     alert(resp.ok ? 'Servidor reiniciado.' : 'Error reiniciando.');
   });
 
-  // Chat global
-  const chatLogEl = document.getElementById('server-log');
+  // ——— Chat Global via WS ———
+  const chatLogEl = document.getElementById('chat-log');
   const wsChat = new WebSocket(`wss://${location.host}/ws/chat`);
+  wsChat.onopen = () => chatLogEl.textContent = '';
   wsChat.onmessage = ev => {
     const { user, message, ts } = JSON.parse(ev.data);
     chatLogEl.textContent += `[${new Date(ts).toLocaleTimeString()}] <${user}>: ${message}\n`;
     chatLogEl.scrollTop = chatLogEl.scrollHeight;
   };
+  wsChat.onerror = err => console.error('WS chat error', err);
 
-  // Log en tiempo real via WebSocket
+  // ——— Log de Servidor via WS ———
   const logPre = document.getElementById('server-log');
   const wsLog = new WebSocket(`wss://${location.host}/ws/log`);
   wsLog.onopen = () => logPre.textContent = '';
@@ -129,8 +126,12 @@ document.addEventListener('DOMContentLoaded', () => {
     logPre.textContent += data + '\n';
     logPre.scrollTop = logPre.scrollHeight;
   };
+  wsLog.onerror = err => console.error('WS log error', err);
+  wsLog.onclose = () => {
+    logPre.textContent += '\n― conexión de log cerrada ―';
+  };
 
-  // Inicial
+  // Carga inicial de estadísticas
   updateStats();
   setInterval(updateStats, 10000);
 });
